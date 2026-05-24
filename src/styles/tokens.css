@@ -1,0 +1,87 @@
+:root {
+  --bg-base: #08080f;
+  --bg-elevated: #12121b;
+  --bg-glass: rgba(18, 18, 27, 0.72);
+  --bg-glass-strong: rgba(24, 24, 36, 0.92);
+
+  --aurora-blue: #4F8BFF;
+  --aurora-purple: #A855F7;
+  --aurora-pink: #EC4899;
+  --aurora-amber: #FBBF24;
+  --aurora-emerald: #10D9A0;
+  --aurora-cyan: #06D9F0;
+  --aurora-rose: #F43F5E;
+
+  --grad-aurora: linear-gradient(135deg, #4F8BFF 0%, #A855F7 35%, #EC4899 70%, #FBBF24 100%);
+  --grad-active: linear-gradient(135deg, #10D9A0 0%, #06D9F0 100%);
+  --grad-thinking: linear-gradient(135deg, #FBBF24 0%, #EC4899 100%);
+  --grad-tool: linear-gradient(135deg, #4F8BFF 0%, #A855F7 100%);
+  --grad-error: linear-gradient(135deg, #F43F5E 0%, #FBBF24 100%);
+
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-tertiary: #71717A;
+
+  --font-display: 'Inter Display', 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes aurora-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.aurora-text {
+  background: var(--grad-aurora);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: aurora-shift 8s ease infinite;
+}
+
+.aurora-bg {
+  background: var(--grad-aurora);
+  background-size: 200% 200%;
+  animation: aurora-shift 12s ease infinite;
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.04), transparent);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 8px 32px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.aurora-border-card {
+  position: relative;
+  background: var(--bg-elevated);
+}
+.aurora-border-card::before {
+  content: "";
+  position: absolute; inset: 0;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: var(--grad-aurora);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.aurora-border-card:hover::before { opacity: 1; }

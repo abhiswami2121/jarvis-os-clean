@@ -1,0 +1,156 @@
+"use client";
+import { useState, useRef, useEffect } from "react";
+import { Send, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { CHAT_API, RESUME_API, type JarvisState, initialState } from "@/lib/jarvis-transport";
+import { cn } from "@/lib/utils";
+
+export function JarvisChatPanel() {
+  const [state, setState] = useState<JarvisState>(initialState);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [runId, setRunId] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const savedRunId = typeof window !== "undefined" ? sessionStorage.getItem("jarvis_run_id") : null;
+    const savedCursor = typeof window !== "undefined" ? sessionStorage.getItem("jarvis_cursor") : null;
+    if (savedRunId) void resumeStream(savedRunId, savedCursor || undefined);
+  }, []);
+
+  useEffect(() => {
+    messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: "smooth" });
+  }, [state.messages]);
+
+  async function consumeSSE(response: Response) {
+    const reader = response.body?.getReader();
+    if (!reader) return;
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          const payload = JSON.parse(line.slice(6));
+          if (payload.type === "state" || payload.type === "done") {
+            setState(payload.state);
+            if (payload.runId) { setRunId(payload.runId); sessionStorage.setItem("jarvis_run_id", payload.runId); }
+            if (payload.cursor) { setCursor(payload.cursor); sessionStorage.setItem("jarvis_cursor", payload.cursor); }
+          }
+        } catch {}
+      }
+    }
+  }
+
+  async function sendMessage() {
+    if (!input.trim() || sending) return;
+    setError(null);
+    setSending(true);
+    abortRef.current = new AbortController();
+    const userMsg = input.trim();
+    setInput("");
+    try {
+      const response = await fetch(CHAT_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          commands: [{ type: "add-message", payload: { role: "user", content: userMsg } }],
+          runId: runId,
+          system: "You are Jarvis, NewLeaf's frontier coding + operations agent. You can write code, manage the VPS, query Base44 entities, deploy to Vercel, and refine your own skills. Be precise, never lie about data completeness, and cite your sources.",
+          thinking: false,
+        }),
+        signal: abortRef.current.signal,
+      });
+      const newRunId = response.headers.get("X-Run-Id");
+      if (newRunId) { setRunId(newRunId); sessionStorage.setItem("jarvis_run_id", newRunId); }
+      await consumeSSE(response);
+    } catch (e: any) {
+      if (e.name !== "AbortError") setError(e.message || "Network error");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function resumeStream(rid: string, fromCursor?: string) {
+    try {
+      const url = new URL(RESUME_API);
+      url.searchParams.set("runId", rid);
+      if (fromCursor) url.searchParams.set("cursor", fromCursor);
+      const response = await fetch(url.toString());
+      if (!response.ok) return;
+      await consumeSSE(response);
+    } catch {}
+  }
+
+  function clearConversation() {
+    setState(initialState); setRunId(null); setCursor(null);
+    sessionStorage.removeItem("jarvis_run_id");
+    sessionStorage.removeItem("jarvis_cursor");
+  }
+
+  return (
+    <div className="flex h-[calc(100vh-8rem)] w-full flex-col rounded-2xl border border-white/10 bg-black/30 backdrop-blur-xl shadow-2xl">
+      <div className="flex items-center justify-between border-b border-white/10 px-6 py-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-emerald-400" />
+          <span className="font-mono text-sm text-emerald-400/90">jarvis-on-vps · kimi-k2.6</span>
+          {state.activeRun && !state.runComplete && (<span className="text-xs text-amber-400 animate-pulse">running…</span>)}
+          {runId && (<span className="font-mono text-[10px] text-white/30">{runId.slice(-8)}</span>)}
+        </div>
+        {state.messages.length > 0 && (
+          <button onClick={clearConversation} className="text-xs text-white/40 hover:text-white/80">clear</button>
+        )}
+      </div>
+      <div ref={messagesRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+        {state.messages.length === 0 && (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <Sparkles className="h-8 w-8 text-emerald-400/40 mb-3" />
+            <h3 className="text-lg font-semibold text-white/80">Jarvis Core is Live</h3>
+            <p className="mt-2 max-w-md text-sm text-white/40">Direct line to the VPS brain. Refresh-safe via Redis Streams.</p>
+            <div className="mt-6 grid grid-cols-2 gap-2 max-w-md">
+              {["build me a runtime status widget","audit billing recovery queue","refactor the chat scrollbar","show declines from last 7 days"].map((s) => (
+                <button key={s} onClick={() => setInput(s)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white/60 hover:border-emerald-400/40 hover:text-emerald-400 transition">{s}</button>
+              ))}
+            </div>
+          </div>
+        )}
+        {state.messages.map((msg) => (
+          <div key={msg.id} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
+            <div className={cn("max-w-[85%] rounded-2xl px-4 py-3", msg.role === "user" ? "bg-emerald-600/20 border border-emerald-500/30" : "bg-white/5 border border-white/10")}>
+              {msg.parts.map((p, idx) => {
+                if (p.type === "text") return (
+                  <div key={idx} className="whitespace-pre-wrap text-sm leading-relaxed text-white/90">
+                    {p.text}{msg.status === "streaming" && idx === msg.parts.length - 1 && (<span className="ml-1 inline-block h-3 w-1.5 animate-pulse bg-emerald-400" />)}
+                  </div>);
+                if (p.type === "thinking") return (
+                  <details key={idx} className="mb-2"><summary className="cursor-pointer text-xs text-white/40">💭 reasoning</summary><div className="mt-1 whitespace-pre-wrap text-xs text-white/50 italic border-l-2 border-white/10 pl-2">{p.text}</div></details>);
+                if (p.type === "tool-call") return (
+                  <div key={idx} className="my-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                    <div className="font-mono text-xs text-amber-400 mb-1">⚡ {p.toolName}</div>
+                    {p.status?.type === "running" && (<div className="text-xs text-white/40 flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> running…</div>)}
+                    {p.status?.type === "complete" && p.result && (<pre className="text-xs text-white/60 max-h-32 overflow-auto">{JSON.stringify(p.result, null, 2).slice(0, 800)}</pre>)}
+                    {p.status?.type === "error" && (<div className="text-xs text-rose-400">error: {JSON.stringify(p.status.error)}</div>)}
+                  </div>);
+                return null;
+              })}
+            </div>
+          </div>
+        ))}
+        {error && (<div className="flex items-center gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-300"><AlertCircle className="h-4 w-4" /> {error}</div>)}
+      </div>
+      <div className="border-t border-white/10 p-4">
+        <div className="flex items-end gap-2">
+          <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendMessage(); } }} placeholder="Tell Jarvis what to build, audit, or refine…" rows={2} disabled={sending} className="flex-1 resize-none rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500/40 focus:outline-none disabled:opacity-50" />
+          <button onClick={() => void sendMessage()} disabled={sending || !input.trim()} className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-30 transition">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,34 @@
+"use client";
+
+import { Thread } from "@/components/assistant-ui/thread";
+import { TopBar } from "@/components/jarvis/top-bar";
+import { Hero } from "@/components/jarvis/hero";
+import { useThread } from "@assistant-ui/react";
+
+function ThreadOrHero() {
+  const isEmpty = useThread((t) => t.messages.length === 0);
+  if (isEmpty) {
+    return (
+      <>
+        <Hero />
+        <div className="border-t border-border/50 max-w-3xl mx-auto w-full">
+          <Thread />
+        </div>
+      </>
+    );
+  }
+  return (
+    <div className="flex-1 overflow-hidden max-w-3xl mx-auto w-full">
+      <Thread />
+    </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <main className="flex flex-col h-screen">
+      <TopBar />
+      <ThreadOrHero />
+    </main>
+  );
+}

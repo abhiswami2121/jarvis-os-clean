@@ -1,0 +1,88 @@
+"use client";
+
+import { useLocalRuntime, type ChatModelAdapter, type ThreadMessage } from "@assistant-ui/react";
+
+const JarvisAdapter: ChatModelAdapter = {
+  async *run({ messages, abortSignal }) {
+    const res = await fetch("/api/agent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages, profile: "kimi-k2.6" }),
+      signal: abortSignal,
+    });
+
+    if (!res.body) {
+      yield { content: [{ type: "text", text: "⚠ No response stream from VPS" }] };
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let accumulatedText = "";
+    const toolCalls: any[] = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // Parse SSE: split by double newline (event boundary)
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop() || "";
+
+      for (const part of parts) {
+        if (!part.trim() || part.startsWith(":")) continue;
+        const lines = part.split("\n");
+        let eventName = "message";
+        let dataLine = "";
+        for (const line of lines) {
+          if (line.startsWith("event:")) eventName = line.slice(6).trim();
+          else if (line.startsWith("data:")) dataLine = line.slice(5).trim();
+        }
+        if (!dataLine) continue;
+        let payload: any;
+        try { payload = JSON.parse(dataLine); } catch { continue; }
+
+        const type = payload.type || eventName;
+
+        if (type === "text") {
+          accumulatedText += payload.text || "";
+        } else if (type === "tool_use") {
+          toolCalls.push({
+            type: "tool-call",
+            toolCallId: payload.id || `t${toolCalls.length}`,
+            toolName: payload.name || "tool",
+            args: payload.input || {},
+            status: { type: "running" },
+          });
+        } else if (type === "tool_result") {
+          const tc = toolCalls.find((t) => t.toolCallId === payload.id);
+          if (tc) {
+            tc.result = payload.output || payload.content || "";
+            tc.status = { type: payload.is_error ? "incomplete" : "complete" };
+          }
+        } else if (type === "done" || type === "status") {
+          if (payload.status === "error") {
+            accumulatedText += `\n\n⚠ Error: ${payload.error || "unknown"}`;
+          }
+        }
+
+        // Yield current state — interleave tool calls and text
+        const content: any[] = [];
+        if (toolCalls.length > 0) content.push(...toolCalls);
+        if (accumulatedText) content.push({ type: "text", text: accumulatedText });
+        if (content.length === 0) content.push({ type: "text", text: "" });
+        yield { content };
+      }
+    }
+  },
+};
+
+import React from "react";
+import { AssistantRuntimeProvider } from "@assistant-ui/react";
+
+export function JarvisRuntimeProvider({ children }: { children: React.ReactNode }) {
+  const runtime = useLocalRuntime(JarvisAdapter);
+  return <AssistantRuntimeProvider runtime={runtime}>{children}</AssistantRuntimeProvider>;
+}

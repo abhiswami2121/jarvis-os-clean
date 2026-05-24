@@ -1,0 +1,114 @@
+import { NextRequest } from "next/server";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
+export const dynamic = "force-dynamic";
+
+const VPS_URL = process.env.JARVIS_VPS_URL || "http://187.127.250.171:8102";
+const TOKEN = process.env.DIAGNOSTICS_API_KEY || "NL2026061471";
+
+function sse(event: string, data: any): Uint8Array {
+  return new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+export async function POST(req: NextRequest) {
+  const body: any = await req.json().catch(() => ({}));
+  const messages: any[] = body.messages || [];
+  const profile: string = body.profile || "kimi-k2.6";
+
+  // Build goal text from latest user message + history context
+  const lastUser = [...messages].reverse().find((m: any) => m.role === "user");
+  let goalText = "";
+  if (lastUser && lastUser.content) {
+    if (typeof lastUser.content === "string") goalText = lastUser.content;
+    else if (Array.isArray(lastUser.content)) {
+      goalText = lastUser.content.filter((p: any) => p.type === "text").map((p: any) => p.text).join("\n");
+    }
+  }
+  if (!goalText) goalText = "Hello";
+
+  if (messages.length > 1) {
+    const history = messages.slice(0, -1).map((m: any) => {
+      let t = "";
+      if (typeof m.content === "string") t = m.content;
+      else if (Array.isArray(m.content)) {
+        t = m.content.filter((p: any) => p.type === "text").map((p: any) => p.text).join("\n");
+      }
+      return `${String(m.role).toUpperCase()}: ${t}`;
+    }).join("\n\n");
+    goalText = `Prior conversation:\n${history}\n\nCurrent request:\n${goalText}`;
+  }
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        controller.enqueue(sse("system", { type: "system", subtype: "connecting" }));
+
+        // Step 1: Create session
+        const createRes = await fetch(`${VPS_URL}/v1/sessions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${TOKEN}`,
+          },
+          body: JSON.stringify({ goal: goalText, profile, max_turns: 30 }),
+        });
+
+        if (!createRes.ok) {
+          controller.enqueue(sse("error", { error: `Session create failed: ${createRes.status}` }));
+          controller.close();
+          return;
+        }
+
+        const sessionData: any = await createRes.json();
+        const sid = sessionData.session_id;
+        if (!sid) {
+          controller.enqueue(sse("error", { error: "No session_id returned" }));
+          controller.close();
+          return;
+        }
+
+        // Tell client the session_id IMMEDIATELY so it can be persisted for resume
+        controller.enqueue(sse("system", { type: "system", subtype: "session", session_id: sid }));
+
+        // Step 2: Stream the session events DIRECTLY (no batching)
+        const streamRes = await fetch(`${VPS_URL}/v1/sessions/${sid}/stream`, {
+          headers: { "Authorization": `Bearer ${TOKEN}` },
+          signal: req.signal,
+        });
+
+        if (!streamRes.ok || !streamRes.body) {
+          controller.enqueue(sse("error", { error: `Stream failed: ${streamRes.status}` }));
+          controller.close();
+          return;
+        }
+
+        const reader = streamRes.body.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          // PASS THROUGH RAW — this is the fix for animations
+          controller.enqueue(value);
+        }
+
+        controller.enqueue(sse("done", { type: "done", status: "complete" }));
+        controller.close();
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        controller.enqueue(sse("error", { error: msg }));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+      "Connection": "keep-alive",
+    },
+  });
+}

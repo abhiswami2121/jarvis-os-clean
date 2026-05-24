@@ -1,0 +1,79 @@
+"use client";
+import { useState } from "react";
+import { MessageSquarePlus, Search, Pin, MoreHorizontal, Sparkles, X, History } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+
+const SAMPLE_CONVERSATIONS = [
+  { id: "1", title: "NMI billing audit — May 23", pinned: true, time: "now" },
+  { id: "2", title: "Customer 360 — Paul Konicki", time: "2h" },
+  { id: "3", title: "VAPI lead funnel analysis", time: "yesterday" },
+  { id: "4", title: "Recovery queue triage", time: "yesterday" },
+  { id: "5", title: "Dispute round 2 draft", time: "May 22" },
+];
+
+export function ChatSidebar({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const [search, setSearch] = useState("");
+  return (
+    <AnimatePresence mode="wait">
+      {open && (
+        <motion.aside
+          initial={{ x: -300, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: -300, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+          className="relative z-20 flex w-72 flex-col border-r border-white/[0.06] bg-white/[0.02] backdrop-blur-xl"
+        >
+          <div className="flex h-14 items-center justify-between px-4 border-b border-white/[0.04]">
+            <div className="flex items-center gap-2">
+              <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-cyan-500">
+                <Sparkles className="size-3.5 text-white" />
+              </div>
+              <span className="text-sm font-semibold tracking-tight">Jarvis</span>
+            </div>
+            <button onClick={() => onOpenChange(false)} className="rounded-md p-1 text-zinc-500 hover:bg-white/5 hover:text-zinc-300 transition-colors"><X className="size-4" /></button>
+          </div>
+          <div className="p-3">
+            <button className="flex w-full items-center gap-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-cyan-500/20 border border-white/10 px-3 py-2.5 text-sm font-medium hover:from-purple-500/30 hover:to-cyan-500/30 transition-all">
+              <MessageSquarePlus className="size-4" />
+              New conversation
+            </button>
+          </div>
+          <div className="px-3 pb-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-zinc-500" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search history" className="w-full rounded-lg bg-white/[0.03] border border-white/[0.06] py-2 pl-9 pr-3 text-xs text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-white/15" />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto px-2">
+            <div className="px-2 pt-2 pb-1 text-[10px] uppercase tracking-wider text-zinc-500 font-medium flex items-center gap-1"><Pin className="size-3" /> Pinned</div>
+            {SAMPLE_CONVERSATIONS.filter(c => c.pinned).map(c => (<ConvoItem key={c.id} title={c.title} time={c.time} active />))}
+            <div className="px-2 pt-3 pb-1 text-[10px] uppercase tracking-wider text-zinc-500 font-medium flex items-center gap-1"><History className="size-3" /> Recent</div>
+            {SAMPLE_CONVERSATIONS.filter(c => !c.pinned).map(c => (<ConvoItem key={c.id} title={c.title} time={c.time} />))}
+          </div>
+          <div className="border-t border-white/[0.04] p-3">
+            <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-white/[0.03] cursor-pointer">
+              <div className="flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 text-[10px] font-bold text-black">AS</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-zinc-200 truncate">Abhi Swami</div>
+                <div className="text-[10px] text-zinc-500 truncate">super_admin</div>
+              </div>
+              <MoreHorizontal className="size-3.5 text-zinc-500" />
+            </div>
+          </div>
+        </motion.aside>
+      )}
+    </AnimatePresence>
+  );
+}
+function ConvoItem({ title, time, active }: { title: string; time: string; active?: boolean }) {
+  return (
+    <button className={`group w-full text-left rounded-lg px-3 py-2 mb-0.5 transition-all ${active ? "bg-white/[0.05] border border-white/[0.06]" : "hover:bg-white/[0.03]"}`}>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-medium text-zinc-200 truncate">{title}</div>
+          <div className="text-[10px] text-zinc-500 mt-0.5">{time}</div>
+        </div>
+      </div>
+    </button>
+  );
+}

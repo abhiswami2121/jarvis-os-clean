@@ -1,0 +1,23 @@
+import { HeroBar } from "@/components/dashboard/HeroBar";
+import { AuroraHero } from "@/components/dashboard/AuroraHero";
+import { QuickStart } from "@/components/dashboard/QuickStart";
+import { RuntimePoolStatus } from "@/components/dashboard/RuntimePoolStatus";
+import { ActiveSessionsGrid } from "@/components/dashboard/ActiveSessionsGrid";
+import { SystemPulse } from "@/components/dashboard/SystemPulse";
+
+export default function DashboardPage() {
+  return (
+    <div className="flex min-h-screen flex-col bg-[#08080f]">
+      <HeroBar />
+      <main className="flex-1">
+        <AuroraHero />
+        <div className="mx-auto grid max-w-7xl gap-10 px-6 pb-24">
+          <QuickStart />
+          <RuntimePoolStatus />
+          <ActiveSessionsGrid />
+        </div>
+      </main>
+      <SystemPulse />
+    </div>
+  );
+}

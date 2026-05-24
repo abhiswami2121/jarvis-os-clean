@@ -1,0 +1,77 @@
+"use client";
+import { Menu, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LS_MODEL } from "@/app/jarvis-runtime";
+
+const MODELS = [
+  { id: "kimi-k2.6", label: "Kimi K2.6", desc: "Deep thinking" },
+  { id: "kimi-k2.6-fast", label: "Kimi K2.6 Fast", desc: "Quick, no thinking" },
+  { id: "claude-sonnet-4", label: "Claude Sonnet 4", desc: "Tool orchestration" },
+  { id: "gpt-5", label: "GPT-5", desc: "Creative" },
+  { id: "deepseek-v4", label: "DeepSeek V4", desc: "Council" },
+];
+
+export function ChatTopBar({ onSidebarToggle, onArtifactToggle, artifactOpen }: { onSidebarToggle: () => void; onArtifactToggle: () => void; artifactOpen: boolean }) {
+  const [model, setModel] = useState("kimi-k2.6");
+  const [online, setOnline] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(LS_MODEL);
+      if (saved) setModel(saved);
+      const handleOn = () => setOnline(true);
+      const handleOff = () => setOnline(false);
+      window.addEventListener("online", handleOn);
+      window.addEventListener("offline", handleOff);
+      setOnline(navigator.onLine);
+      return () => {
+        window.removeEventListener("online", handleOn);
+        window.removeEventListener("offline", handleOff);
+      };
+    }
+  }, []);
+
+  const onChange = (val: string) => {
+    setModel(val);
+    if (typeof window !== "undefined") localStorage.setItem(LS_MODEL, val);
+  };
+
+  return (
+    <div className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.06] bg-[#08080f]/70 backdrop-blur-xl px-4">
+      <div className="flex items-center gap-3">
+        <button onClick={onSidebarToggle} className="rounded-lg p-2 text-zinc-400 hover:bg-white/5 hover:text-zinc-100 transition-colors" aria-label="Toggle sidebar">
+          <Menu className="size-4" />
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="text-sm font-semibold text-zinc-100">Jarvis</div>
+          <Select value={model} onValueChange={onChange}>
+            <SelectTrigger className="h-8 w-[180px] border-white/[0.08] bg-white/[0.03] text-xs text-zinc-200 hover:bg-white/[0.06]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-[#0f0f17]/95 backdrop-blur-xl text-zinc-200">
+              {MODELS.map(m => (
+                <SelectItem key={m.id} value={m.id} className="text-xs focus:bg-white/[0.06] focus:text-zinc-100">
+                  <div className="flex flex-col">
+                    <span>{m.label}</span>
+                    <span className="text-[10px] text-zinc-500">{m.desc}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${online ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-amber-500/10 border-amber-500/20 text-amber-400"}`}>
+          <div className={`size-1.5 rounded-full ${online ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+          {online ? "online" : "offline"}
+        </div>
+        <button onClick={onArtifactToggle} className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${artifactOpen ? "bg-purple-500/15 border-purple-500/30 text-purple-300" : "bg-white/[0.03] border-white/[0.06] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]"}`}>
+          <FileText className="size-3.5" />
+          <span className="hidden sm:inline">Artifacts</span>
+        </button>
+      </div>
+    </div>
+  );
+}

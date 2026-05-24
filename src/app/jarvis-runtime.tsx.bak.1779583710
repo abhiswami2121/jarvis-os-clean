@@ -1,0 +1,166 @@
+"use client";
+
+import React, { useEffect, useRef, useState } from "react";
+import { useLocalRuntime, type ChatModelAdapter, AssistantRuntimeProvider } from "@assistant-ui/react";
+
+const LS_THREAD = "jarvis-os:thread:v1";
+const LS_MODEL = "jarvis-os:model:v1";
+const LS_SESSION = "jarvis-os:session:v1";
+
+function loadModel(): string {
+  if (typeof window === "undefined") return "kimi-k2.6";
+  return localStorage.getItem(LS_MODEL) || "kimi-k2.6";
+}
+
+async function consumeSse(reader: ReadableStreamDefaultReader<Uint8Array>, onEvent: (name: string, data: any) => void) {
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop() || "";
+    for (const part of parts) {
+      if (!part.trim() || part.startsWith(":")) continue;
+      const lines = part.split("\n");
+      let evName = "message";
+      let dataLine = "";
+      for (const line of lines) {
+        if (line.startsWith("event:")) evName = line.slice(6).trim();
+        else if (line.startsWith("data:")) dataLine = line.slice(5).trim();
+      }
+      if (!dataLine) continue;
+      try { onEvent(evName, JSON.parse(dataLine)); } catch { /* ignore */ }
+    }
+  }
+}
+
+const JarvisAdapter: ChatModelAdapter = {
+  async *run({ messages, abortSignal }) {
+    const model = loadModel();
+    const res = await fetch("/api/agent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages, profile: model }),
+      signal: abortSignal,
+    });
+
+    if (!res.body) {
+      yield { content: [{ type: "text", text: "⚠ No response stream from VPS" }] };
+      return;
+    }
+
+    const reader = res.body.getReader();
+    let accumulatedText = "";
+    let reasoningText = "";
+    const toolCalls: any[] = [];
+    let sessionId: string | null = null;
+    let lastYield = Date.now();
+
+    const buildContent = (): any[] => {
+      const content: any[] = [];
+      if (reasoningText) content.push({ type: "reasoning", text: reasoningText });
+      for (const tc of toolCalls) content.push(tc);
+      if (accumulatedText) content.push({ type: "text", text: accumulatedText });
+      if (content.length === 0) content.push({ type: "text", text: "" });
+      return content;
+    };
+
+    const events: Array<{ name: string; data: any }> = [];
+    const consumer = consumeSse(reader, (name, data) => events.push({ name, data }));
+
+    // Drain events incrementally
+    let consumerDone = false;
+    consumer.then(() => { consumerDone = true; }).catch(() => { consumerDone = true; });
+
+    while (!consumerDone || events.length > 0) {
+      if (events.length === 0) {
+        await new Promise(r => setTimeout(r, 30));
+        continue;
+      }
+      const { name, data } = events.shift()!;
+      const type = data.type || name;
+
+      if (type === "system" && data.session_id) {
+        sessionId = data.session_id;
+        if (typeof window !== "undefined") {
+          localStorage.setItem(LS_SESSION, sessionId!);
+        }
+      } else if (type === "text") {
+        accumulatedText += data.text || "";
+      } else if (type === "reasoning" || type === "thinking") {
+        reasoningText += data.text || "";
+      } else if (type === "tool_use" || type === "tool_call") {
+        toolCalls.push({
+          type: "tool-call",
+          toolCallId: data.id || `t${toolCalls.length}`,
+          toolName: data.name || "tool",
+          args: data.input || data.args || {},
+          status: { type: "running" },
+        });
+      } else if (type === "tool_result") {
+        const tc = toolCalls.find((t) => t.toolCallId === data.id);
+        if (tc) {
+          tc.result = data.output || data.content || "";
+          tc.status = { type: data.is_error ? "incomplete" : "complete" };
+        }
+      } else if (type === "error") {
+        accumulatedText += `\n\n⚠ Error: ${data.error || "unknown"}`;
+      } else if (type === "done") {
+        if (typeof window !== "undefined") localStorage.removeItem(LS_SESSION);
+      }
+
+      // Throttle yields to ~30 fps for smooth animation
+      const now = Date.now();
+      if (now - lastYield > 33) {
+        yield { content: buildContent() };
+        lastYield = now;
+      }
+    }
+
+    yield { content: buildContent() };
+  },
+};
+
+export function JarvisRuntimeProvider({ children }: { children: React.ReactNode }) {
+  const runtime = useLocalRuntime(JarvisAdapter);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Persist thread to localStorage on every message change
+  useEffect(() => {
+    setHydrated(true);
+    // Restore from localStorage on mount
+    try {
+      const saved = localStorage.getItem(LS_THREAD);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.messages) && parsed.messages.length > 0) {
+          // Inject prior messages into runtime
+          (runtime.thread as any)?.import?.({ messages: parsed.messages });
+        }
+      }
+    } catch { /* ignore */ }
+  }, [runtime]);
+
+  // Listen for thread changes and persist
+  useEffect(() => {
+    if (!hydrated) return;
+    const unsubscribe = (runtime.thread as any)?.subscribe?.(() => {
+      try {
+        const exported = (runtime.thread as any)?.export?.();
+        if (exported && exported.messages) {
+          localStorage.setItem(LS_THREAD, JSON.stringify({
+            messages: exported.messages,
+            savedAt: Date.now(),
+          }));
+        }
+      } catch { /* ignore */ }
+    });
+    return () => { if (typeof unsubscribe === "function") unsubscribe(); };
+  }, [runtime, hydrated]);
+
+  return <AssistantRuntimeProvider runtime={runtime}>{children}</AssistantRuntimeProvider>;
+}
+
+export { LS_MODEL, LS_THREAD };

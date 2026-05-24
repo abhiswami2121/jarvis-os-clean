@@ -1,0 +1,34 @@
+/**
+ * jarvis-transport.ts — Assistant Transport client for Jarvis-on-VPS.
+ *
+ * Routes through Next.js proxy (/api/jarvis-proxy) so the HTTPS Vercel
+ * frontend can talk to the HTTP VPS without mixed-content blocks.
+ */
+
+export type JarvisState = {
+  messages: Array<{
+    id: string;
+    role: "user" | "assistant" | "tool";
+    parts: Array<
+      | { type: "text"; text: string }
+      | { type: "thinking"; text: string }
+      | { type: "tool-call"; toolCallId: string; toolName: string; args: any; argsText?: string; result?: any; status: { type: "running" | "complete" | "error"; error?: any } }
+    >;
+    status: "streaming" | "complete" | "error";
+  }>;
+  activeRun: { id: string; turn: number; tokensUsed: number; startedAt?: string; endedAt?: string } | null;
+  runComplete: boolean;
+  cost: number | null;
+};
+
+export const initialState: JarvisState = {
+  messages: [],
+  activeRun: null,
+  runComplete: false,
+  cost: null,
+};
+
+// Use relative paths — hits same-origin proxy on Vercel (HTTPS) or localhost (HTTP) in dev.
+// The proxy then forwards to http://147.93.102.210:8102/v1/chat
+export const CHAT_API = "/api/jarvis-proxy";
+export const RESUME_API = "/api/jarvis-proxy/resume";
