@@ -5,7 +5,6 @@ import {
 } from "@/components/assistant-ui/attachment";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import {
-  Reasoning,
   ReasoningContent,
   ReasoningRoot,
   ReasoningText,
@@ -16,7 +15,6 @@ import {
   ToolGroupRoot,
   ToolGroupTrigger,
 } from "@/components/assistant-ui/tool-group";
-import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -46,7 +44,13 @@ import {
   RefreshCwIcon,
   SquareIcon,
 } from "lucide-react";
+import { motion } from "motion/react";
 import type { FC } from "react";
+import {
+  JarvisReasoning,
+  JarvisToolCall,
+  JarvisText,
+} from "@/components/jarvis/JarvisMessageRenderer";
 
 export const Thread: FC = () => {
   return (
@@ -187,69 +191,75 @@ const AssistantMessage: FC = () => {
     <MessagePrimitive.Root
       data-slot="aui_assistant-message-root"
       data-role="assistant"
-      className="fade-in slide-in-from-bottom-1 relative animate-in duration-150 [contain-intrinsic-size:auto_300px] [content-visibility:auto]"
+      className="relative [contain-intrinsic-size:auto_300px] [content-visibility:auto]"
     >
-      <div
-        data-slot="aui_assistant-message-content"
-        className="wrap-break-word px-2 text-foreground leading-relaxed"
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
       >
-        <MessagePrimitive.GroupedParts
-          groupBy={(part) => {
-            if (part.type === "reasoning")
-              return ["group-chainOfThought", "group-reasoning"];
-            if (part.type === "tool-call") {
-              if (getMcpAppFromToolPart(part)) return null;
-              return ["group-chainOfThought", "group-tool"];
-            }
-            return null;
-          }}
+        <div
+          data-slot="aui_assistant-message-content"
+          className="wrap-break-word px-2 text-foreground leading-relaxed"
         >
-          {({ part, children }) => {
-            switch (part.type) {
-              case "group-chainOfThought":
-                return <div data-slot="aui_chain-of-thought">{children}</div>;
-              case "group-reasoning": {
-                const running = part.status.type === "running";
-                return (
-                  <ReasoningRoot defaultOpen={running}>
-                    <ReasoningTrigger active={running} />
-                    <ReasoningContent aria-busy={running}>
-                      <ReasoningText>{children}</ReasoningText>
-                    </ReasoningContent>
-                  </ReasoningRoot>
-                );
+          <MessagePrimitive.GroupedParts
+            groupBy={(part) => {
+              if (part.type === "reasoning")
+                return ["group-chainOfThought", "group-reasoning"];
+              if (part.type === "tool-call") {
+                if (getMcpAppFromToolPart(part)) return null;
+                return ["group-chainOfThought", "group-tool"];
               }
-              case "group-tool":
-                return (
-                  <ToolGroupRoot>
-                    <ToolGroupTrigger
-                      count={part.indices.length}
-                      active={part.status.type === "running"}
-                    />
-                    <ToolGroupContent>{children}</ToolGroupContent>
-                  </ToolGroupRoot>
-                );
-              case "text":
-                return <MarkdownText />;
-              case "reasoning":
-                return <Reasoning {...part} />;
-              case "tool-call":
-                return part.toolUI ?? <ToolFallback {...part} />;
-              default:
-                return null;
-            }
-          }}
-        </MessagePrimitive.GroupedParts>
-        <MessageError />
-      </div>
+              return null;
+            }}
+          >
+            {({ part, children }) => {
+              switch (part.type) {
+                case "group-chainOfThought":
+                  return <div data-slot="aui_chain-of-thought">{children}</div>;
+                case "group-reasoning": {
+                  const running = part.status.type === "running";
+                  return (
+                    <ReasoningRoot defaultOpen={running}>
+                      <ReasoningTrigger active={running} />
+                      <ReasoningContent aria-busy={running}>
+                        <ReasoningText>{children}</ReasoningText>
+                      </ReasoningContent>
+                    </ReasoningRoot>
+                  );
+                }
+                case "group-tool":
+                  return (
+                    <ToolGroupRoot>
+                      <ToolGroupTrigger
+                        count={part.indices.length}
+                        active={part.status.type === "running"}
+                      />
+                      <ToolGroupContent>{children}</ToolGroupContent>
+                    </ToolGroupRoot>
+                  );
+                case "text":
+                  return <JarvisText />;
+                case "reasoning":
+                  return <JarvisReasoning {...part} />;
+                case "tool-call":
+                  return part.toolUI ?? <JarvisToolCall {...part} />;
+                default:
+                  return null;
+              }
+            }}
+          </MessagePrimitive.GroupedParts>
+          <MessageError />
+        </div>
 
-      <div
-        data-slot="aui_assistant-message-footer"
-        className={cn("ms-2 flex items-center", ACTION_BAR_HEIGHT)}
-      >
-        <BranchPicker />
-        <AssistantActionBar />
-      </div>
+        <div
+          data-slot="aui_assistant-message-footer"
+          className={cn("ms-2 flex items-center", ACTION_BAR_HEIGHT)}
+        >
+          <BranchPicker />
+          <AssistantActionBar />
+        </div>
+      </motion.div>
     </MessagePrimitive.Root>
   );
 };

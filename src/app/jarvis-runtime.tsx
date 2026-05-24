@@ -10,6 +10,15 @@ const LS_CID = "jarvis-os:cid:v1";  // stable conversation id per browser/tab
 
 function getOrCreateCid(): string {
   if (typeof window === "undefined") return "";
+
+  // Prefer URL param when on /chat/[id] so switching conversations works
+  const match = window.location.pathname.match(/^\/chat\/([^/]+)/);
+  if (match) {
+    const urlCid = decodeURIComponent(match[1]);
+    sessionStorage.setItem(LS_CID, urlCid);
+    return urlCid;
+  }
+
   let cid = sessionStorage.getItem(LS_CID);
   if (!cid) {
     cid = `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;

@@ -1,16 +1,29 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "motion/react";
 import { Loader2, AlertCircle, Sparkles } from "lucide-react";
-import { useConversationReplay, type HydratedMessage } from "@/hooks/useConversationReplay";
+import { useConversationReplay, type HydratedMessage, type MessagePart } from "@/hooks/useConversationReplay";
+import { JarvisReasoningView, JarvisToolCallView } from "@/components/jarvis/JarvisMessageRenderer";
+import { toast } from "sonner";
 
 /**
  * Shows replayed conversation history in a clean, read-only timeline.
  * Sits ABOVE the live <Thread> when a conversation has prior history.
  * Disappears once user sends a new message (handled by parent visibility).
+ *
+ * Phase B2 — Now renders tool calls, reasoning, and text parts with the
+ * same JarvisMessageRenderer components used in the live thread.
  */
 export function ConversationHydrator({ cid }: { cid: string | null }) {
-  const { messages, loading, error } = useConversationReplay(cid);
+  const { messages, loading, error, isResuming } = useConversationReplay(cid);
+
+  useEffect(() => {
+    if (isResuming) {
+      toast.loading("Resuming conversation…", { id: "resume-toast", duration: 60000 });
+    } else {
+      toast.dismiss("resume-toast");
+    }
+  }, [isResuming]);
 
   if (!cid) return null;
 
@@ -46,6 +59,12 @@ export function ConversationHydrator({ cid }: { cid: string | null }) {
       {messages.map((m, idx) => (
         <MessageBubble key={m.id} message={m} index={idx} />
       ))}
+      {isResuming && (
+        <div className="flex items-center justify-center gap-2 py-2 text-xs text-emerald-400">
+          <Loader2 className="size-3.5 animate-spin" />
+          <span>Resuming stream…</span>
+        </div>
+      )}
       <div className="flex items-center justify-center gap-2 pt-2 text-[10px] uppercase tracking-widest text-zinc-600">
         <div className="h-px flex-1 bg-gradient-to-r from-transparent to-emerald-500/30" />
         <span className="text-emerald-400/70">Live below</span>
@@ -75,8 +94,44 @@ function MessageBubble({ message, index }: { message: HydratedMessage; index: nu
             Jarvis
           </div>
         )}
-        <div className="whitespace-pre-wrap">{message.content}</div>
+        {isUser ? (
+          <div className="whitespace-pre-wrap">{message.content}</div>
+        ) : (
+          <AssistantParts parts={message.parts} />
+        )}
       </div>
     </motion.div>
+  );
+}
+
+function AssistantParts({ parts }: { parts: MessagePart[] }) {
+  return (
+    <div className="space-y-1">
+      {parts.map((part, i) => {
+        switch (part.type) {
+          case "text":
+            return (
+              <div key={i} className="whitespace-pre-wrap">
+                {part.text}
+              </div>
+            );
+          case "reasoning":
+            return <JarvisReasoningView key={i} text={part.text} />;
+          case "tool-call":
+            return (
+              <JarvisToolCallView
+                key={i}
+                toolName={part.toolName}
+                args={part.args}
+                argsText={JSON.stringify(part.args, null, 2)}
+                result={part.result}
+                status={{ type: part.status }}
+              />
+            );
+          default:
+            return null;
+        }
+      })}
+    </div>
   );
 }
