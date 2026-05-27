@@ -40,16 +40,18 @@ import {
   CopyIcon,
   DownloadIcon,
   MoreHorizontalIcon,
+  PaperclipIcon,
   PencilIcon,
   RefreshCwIcon,
   SquareIcon,
+  XIcon,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import type { FC } from "react";
+import { useState, type DragEvent } from "react";
 import {
   JarvisReasoning,
   JarvisToolCall,
-  JarvisText,
 } from "@/components/jarvis/JarvisMessageRenderer";
 
 export const Thread: FC = () => {
@@ -65,16 +67,16 @@ export const Thread: FC = () => {
       <ThreadPrimitive.Viewport
         turnAnchor="top"
         data-slot="aui_thread-viewport"
-        className="relative flex flex-1 flex-col overflow-x-auto overflow-y-scroll scroll-smooth"
+        className="relative flex flex-1 flex-col overflow-x-hidden overflow-y-auto scroll-smooth"
       >
-        <div className="mx-auto flex w-full max-w-(--thread-max-width) flex-1 flex-col px-4 pt-4">
+        <div className="mx-auto flex w-full max-w-(--thread-max-width) min-h-0 flex-1 flex-col px-4 pt-4">
           <AuiIf condition={(s) => s.thread.isEmpty}>
             <ThreadWelcome />
           </AuiIf>
 
           <div
             data-slot="aui_message-group"
-            className="mb-10 flex flex-col gap-y-8 empty:hidden"
+            className="mb-6 flex flex-col gap-y-8 empty:hidden"
           >
             <ThreadPrimitive.Messages>
               {() => <ThreadMessage />}
@@ -82,6 +84,7 @@ export const Thread: FC = () => {
           </div>
 
           <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer sticky bottom-0 mt-auto flex flex-col gap-4 overflow-visible rounded-t-(--composer-radius) bg-background pb-4 md:pb-6">
+            <ThinkingPulse />
             <ThreadScrollToBottom />
             <Composer />
           </ThreadPrimitive.ViewportFooter>
@@ -142,30 +145,243 @@ const ThreadSuggestionItem: FC = () => {
   );
 };
 
+const ThinkingPulse: FC = () => {
+  const isRunning = useAuiState((s) => s.thread.isRunning);
+  const messages = useAuiState((s) => s.thread.messages);
+
+  // Show when running but the latest assistant message has no text content yet
+  if (!isRunning) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lastMsg = messages?.[messages.length - 1] as any;
+  // If the last message is assistant and has no content parts, we're in "thinking" phase
+  const isInitialThinking =
+    lastMsg?.role === "assistant" &&
+    (!lastMsg?.content || (Array.isArray(lastMsg.content) && lastMsg.content.length === 0));
+
+  if (!isInitialThinking) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 4 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="flex items-center justify-center gap-2 py-1"
+    >
+      <span className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-amber-500/10 bg-amber-500/[0.04] text-[11px] text-amber-400/80">
+        <span className="relative flex size-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/60" />
+          <span className="relative inline-flex size-2 rounded-full bg-amber-400/80" />
+        </span>
+        Thinking…
+      </span>
+    </motion.div>
+  );
+};
+
+// ─── Allowed file types and size limit ──────────────────────────────
+
+const ALLOWED_TYPES = new Set([
+  "text/markdown",    // .md
+  "text/plain",       // .txt
+  "application/pdf",  // .pdf
+  "image/png",        // .png
+  "image/jpeg",       // .jpg
+  "text/csv",         // .csv
+]);
+
+const ALLOWED_EXTENSIONS = new Set([".md", ".txt", ".pdf", ".png", ".jpg", ".jpeg", ".csv"]);
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+function validateFile(file: File): string | null {
+  const ext = "." + file.name.split(".").pop()?.toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(ext) && !ALLOWED_TYPES.has(file.type)) {
+    return `"${file.name}" type not supported (.md .txt .pdf .png .jpg .csv)`;
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    return `"${file.name}" exceeds 10MB limit`;
+  }
+  return null;
+}
+
 const Composer: FC = () => {
+  const [files, setFiles] = useState<File[]>([]);
+  const [dragActive, setDragActive] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
+
+  // Drag-drop handlers
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragEnter = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    const accepted: File[] = [];
+    const rejected: string[] = [];
+
+    for (const file of droppedFiles) {
+      const err = validateFile(file);
+      if (err) {
+        rejected.push(err);
+      } else {
+        accepted.push(file);
+      }
+    }
+
+    if (accepted.length > 0) {
+      setFiles((prev) => [...prev, ...accepted]);
+    }
+    if (rejected.length > 0) {
+      setErrors((prev) => [...prev, ...rejected]);
+      setTimeout(() => setErrors([]), 4000);
+    }
+  };
+
+  const removeFile = (name: string) => {
+    setFiles((prev) => prev.filter((f) => f.name !== name));
+  };
+
   return (
     <ComposerPrimitive.Root className="aui-composer-root relative flex w-full flex-col">
-      <ComposerPrimitive.AttachmentDropzone render={<div data-slot="aui_composer-shell" className="flex w-full flex-col gap-2 rounded-(--composer-radius) border bg-background p-(--composer-padding) transition-shadow focus-within:border-ring/75 focus-within:ring-2 focus-within:ring-ring/20 data-[dragging=true]:border-ring data-[dragging=true]:border-dashed data-[dragging=true]:bg-accent/50" />}><ComposerAttachments /><ComposerPrimitive.Input
-                      placeholder="Send a message..."
-                      className="aui-composer-input max-h-32 min-h-10 w-full resize-none bg-transparent px-1.75 py-1 text-sm outline-none placeholder:text-muted-foreground/80"
-                      rows={1}
-                      autoFocus
-                      aria-label="Message input"
-                    /><ComposerAction /></ComposerPrimitive.AttachmentDropzone>
+      {/* File chips above composer */}
+      <AnimatePresence>
+        {files.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex flex-wrap gap-1.5 px-1 pb-2"
+          >
+            {files.map((file) => (
+              <motion.span
+                key={file.name}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.15 }}
+                className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.04] backdrop-blur px-3 py-1.5 text-xs text-zinc-300"
+              >
+                <PaperclipIcon className="size-3 text-zinc-500" />
+                <span className="max-w-[140px] truncate">{file.name}</span>
+                <button
+                  type="button"
+                  onClick={() => removeFile(file.name)}
+                  className="ml-0.5 rounded p-0.5 text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.08] transition-colors"
+                  aria-label={`Remove ${file.name}`}
+                >
+                  <XIcon className="size-3" />
+                </button>
+              </motion.span>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Error messages */}
+      <AnimatePresence>
+        {errors.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="px-1 pb-1"
+          >
+            {errors.map((err, i) => (
+              <p key={i} className="text-[10px] text-amber-400">{err}</p>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Wrap AttachmentDropzone in a drag-aware container */}
+      <div
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`rounded-(--composer-radius) transition-all duration-200 ${
+          dragActive ? "ring-2 ring-emerald-500/30" : ""
+        }`}
+      >
+        <ComposerPrimitive.AttachmentDropzone
+          render={
+            <div
+              data-slot="aui_composer-shell"
+              className={`flex w-full flex-col gap-2 rounded-(--composer-radius) border bg-background p-(--composer-padding) transition-shadow focus-within:border-ring/75 focus-within:ring-2 focus-within:ring-ring/20 data-[dragging=true]:border-ring data-[dragging=true]:border-dashed data-[dragging=true]:bg-accent/50 ${
+                dragActive ? "border-emerald-500/30" : ""
+              }`}
+            />
+          }
+        >
+          <ComposerAttachments />
+          <ComposerPrimitive.Input
+            placeholder="Send a message... or drop files here"
+            className="aui-composer-input max-h-32 min-h-10 w-full resize-none bg-transparent px-1.75 py-1 text-sm outline-none placeholder:text-muted-foreground/80"
+            rows={1}
+            autoFocus
+            aria-label="Message input"
+          />
+          <ComposerAction />
+        </ComposerPrimitive.AttachmentDropzone>
+      </div>
     </ComposerPrimitive.Root>
   );
 };
 
 const ComposerAction: FC = () => {
+  const isRunning = useAuiState((s) => s.thread.isRunning);
   return (
     <div className="aui-composer-action-wrapper relative flex items-center justify-between">
       <ComposerAddAttachment />
-      <AuiIf condition={(s) => !s.thread.isRunning}>
-        <ComposerPrimitive.Send render={<TooltipIconButton tooltip="Send message" side="bottom" type="button" variant="default" size="icon" className="aui-composer-send size-8 rounded-full" aria-label="Send message" />}><ArrowUpIcon className="aui-composer-send-icon size-4" /></ComposerPrimitive.Send>
-      </AuiIf>
-      <AuiIf condition={(s) => s.thread.isRunning}>
-        <ComposerPrimitive.Cancel render={<Button type="button" variant="default" size="icon" className="aui-composer-cancel size-8 rounded-full" aria-label="Stop generating" />}><SquareIcon className="aui-composer-cancel-icon size-3 fill-current" /></ComposerPrimitive.Cancel>
-      </AuiIf>
+      <div className="relative size-8">
+        <AnimatePresence mode="wait">
+          {!isRunning ? (
+            <motion.div
+              key="send"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute inset-0"
+            >
+              <ComposerPrimitive.Send render={<TooltipIconButton tooltip="Send message" side="bottom" type="button" variant="default" size="icon" className="aui-composer-send size-8 rounded-full" aria-label="Send message" />}><ArrowUpIcon className="aui-composer-send-icon size-4" /></ComposerPrimitive.Send>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="cancel"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute inset-0"
+            >
+              <ComposerPrimitive.Cancel render={<Button type="button" variant="default" size="icon" className="aui-composer-cancel size-8 rounded-full" aria-label="Stop generating" />}><SquareIcon className="aui-composer-cancel-icon size-3 fill-current" /></ComposerPrimitive.Cancel>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
@@ -239,7 +455,7 @@ const AssistantMessage: FC = () => {
                     </ToolGroupRoot>
                   );
                 case "text":
-                  return <JarvisText />;
+                  return <MarkdownText />;
                 case "reasoning":
                   return <JarvisReasoning {...part} />;
                 case "tool-call":
