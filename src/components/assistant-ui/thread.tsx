@@ -4,6 +4,7 @@ import {
   UserMessageAttachments,
 } from "@/components/assistant-ui/attachment";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
+import { ArtifactAwareText } from "@/components/artifacts/ArtifactAwareText";
 import {
   ReasoningContent,
   ReasoningRoot,
@@ -51,6 +52,7 @@ import type { FC } from "react";
 import { useState, type DragEvent } from "react";
 import {
   JarvisReasoning,
+  JarvisReasoningGroup,
   JarvisToolCall,
 } from "@/components/jarvis/JarvisMessageRenderer";
 
@@ -436,12 +438,9 @@ const AssistantMessage: FC = () => {
                 case "group-reasoning": {
                   const running = part.status.type === "running";
                   return (
-                    <ReasoningRoot defaultOpen={running}>
-                      <ReasoningTrigger active={running} />
-                      <ReasoningContent aria-busy={running}>
-                        <ReasoningText>{children}</ReasoningText>
-                      </ReasoningContent>
-                    </ReasoningRoot>
+                    <JarvisReasoningGroup isStreaming={running}>
+                      {children}
+                    </JarvisReasoningGroup>
                   );
                 }
                 case "group-tool":
@@ -455,11 +454,17 @@ const AssistantMessage: FC = () => {
                     </ToolGroupRoot>
                   );
                 case "text":
-                  return <MarkdownText />;
+                  return <ArtifactAwareText />;
                 case "reasoning":
                   return <JarvisReasoning {...part} />;
                 case "tool-call":
-                  return part.toolUI ?? <JarvisToolCall {...part} />;
+                  // PRD May 27: discrete animated status bubble per tool call (Gemini-aligned)
+                  return part.toolUI ?? (
+                    <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900/60 border border-white/10 text-xs text-zinc-300 font-medium shadow-sm w-fit max-w-[90%] my-1 animate-fade-in">
+                      <span className="h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
+                      <span className="font-mono">{(part as any).toolName ?? "Executing skill"}…</span>
+                    </div>
+                  );
                 default:
                   return null;
               }

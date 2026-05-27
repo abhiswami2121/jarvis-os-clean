@@ -9,7 +9,6 @@ import {
   type ReasoningMessagePartComponent,
   type ReasoningGroupComponent,
 } from "@assistant-ui/react";
-import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import {
   Collapsible,
   CollapsibleContent,
@@ -217,7 +216,13 @@ function ReasoningText({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-const ReasoningImpl: ReasoningMessagePartComponent = () => <MarkdownText />;
+const ReasoningImpl: ReasoningMessagePartComponent = ({ text }) => {
+  return (
+    <div className="whitespace-pre-wrap [word-break:break-word] overflow-wrap-anywhere font-mono text-xs leading-relaxed text-amber-200/80">
+      {text ?? ""}
+    </div>
+  );
+};
 
 const ReasoningGroupImpl: ReasoningGroupComponent = ({
   children,
