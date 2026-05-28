@@ -4,7 +4,7 @@ import {
   UserMessageAttachments,
 } from "@/components/assistant-ui/attachment";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
-import { ArtifactAwareText } from "@/components/artifacts/ArtifactAwareText";
+
 import {
   ReasoningContent,
   ReasoningRoot,
@@ -54,6 +54,7 @@ import {
   JarvisReasoning,
   JarvisReasoningGroup,
   JarvisToolCall,
+  JarvisText,
 } from "@/components/jarvis/JarvisMessageRenderer";
 
 export const Thread: FC = () => {
@@ -420,6 +421,17 @@ const AssistantMessage: FC = () => {
           data-slot="aui_assistant-message-content"
           className="wrap-break-word px-2 text-foreground leading-relaxed"
         >
+          {/* Aurora glass container — fiber styling for entire assistant response */}
+          <div className={cn(
+            "relative rounded-2xl overflow-hidden my-1",
+            // Aurora glass morphism base
+            "bg-gradient-to-br from-slate-900/40 via-slate-900/20 to-emerald-900/10",
+            "backdrop-blur-xl",
+            "border border-white/[0.05]",
+            // Subtle emerald glow
+            "shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_4px_24px_-12px_rgba(16,185,129,0.08)]",
+          )}>
+            <div className="px-1 py-0.5"></div>
           <MessagePrimitive.GroupedParts
             groupBy={(part) => {
               if (part.type === "reasoning")
@@ -454,15 +466,28 @@ const AssistantMessage: FC = () => {
                     </ToolGroupRoot>
                   );
                 case "text":
-                  return <ArtifactAwareText />;
+                  return <JarvisText />;
                 case "reasoning":
                   return <JarvisReasoning {...part} />;
                 case "tool-call":
-                  // PRD May 27: discrete animated status bubble per tool call (Gemini-aligned)
+                  // Aurora fiber tool bubble — emerald-to-purple gradient accent
                   return part.toolUI ?? (
-                    <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900/60 border border-white/10 text-xs text-zinc-300 font-medium shadow-sm w-fit max-w-[90%] my-1 animate-fade-in">
-                      <span className="h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
-                      <span className="font-mono">{(part as any).toolName ?? "Executing skill"}…</span>
+                    <div className={cn(
+                      "inline-flex items-center gap-2 px-3 py-2 rounded-xl",
+                      "text-xs text-zinc-200 font-medium",
+                      "w-fit max-w-[90%] my-1 animate-fade-in",
+                      // Aurora glass morphism
+                      "bg-gradient-to-r from-violet-500/[0.06] via-emerald-500/[0.04] to-violet-500/[0.06]",
+                      "backdrop-blur-md",
+                      "border border-white/[0.08]",
+                      "shadow-[0_0_20px_-6px_rgba(139,92,246,0.1)]",
+                    )}>
+                      <span className={cn(
+                        "h-2 w-2 rounded-full",
+                        "bg-gradient-to-br from-emerald-400 to-violet-500",
+                        "animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]"
+                      )} />
+                      <span className="font-mono text-zinc-300">{(part as any).toolName ?? "Executing skill"}…</span>
                     </div>
                   );
                 default:
@@ -471,6 +496,8 @@ const AssistantMessage: FC = () => {
             }}
           </MessagePrimitive.GroupedParts>
           <MessageError />
+          <div className="px-1 py-0.5"></div>
+          </div>{/* end aurora glass container */}
         </div>
 
         <div

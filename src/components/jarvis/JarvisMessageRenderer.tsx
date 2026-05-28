@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
    - Monospace text with proper wrapping, single-line-proof
    - Stable container prevents layout jitter during streaming
    - Amber/gold glow theme matching ThinkingPulse
+   - v2: Replaces buggy Base UI Collapsible with direct conditional
+     render + CSS transitions for reliable click behavior
    ========================================================== */
 export function JarvisReasoningView({
   text,
@@ -38,20 +40,29 @@ export function JarvisReasoningView({
 }) {
   const [open, setOpen] = useState(isStreaming ?? true);
   const prevStreaming = React.useRef(isStreaming);
+  // Track if user manually toggled (so auto-close respects user choice)
+  const userToggledRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (prevStreaming.current && !isStreaming) {
+    if (prevStreaming.current && !isStreaming && !userToggledRef.current) {
       // Streaming just finished — auto-collapse after a beat
-      const t = setTimeout(() => setOpen(false), 2000);
+      const t = setTimeout(() => setOpen(false), 2500);
       return () => clearTimeout(t);
     }
-    if (isStreaming && !open) setOpen(true);
+    if (isStreaming && !open && !userToggledRef.current) {
+      setOpen(true);
+    }
     prevStreaming.current = isStreaming;
   }, [isStreaming, open]);
 
   // Count approximate words for duration hint
   const wordCount = text ? text.split(/\s+/).filter(Boolean).length : 0;
   const estSeconds = Math.max(1, Math.round(wordCount / 20));
+
+  const handleToggle = () => {
+    userToggledRef.current = true;
+    setOpen((prev) => !prev);
+  };
 
   return (
     <motion.div
@@ -60,109 +71,119 @@ export function JarvisReasoningView({
       transition={{ duration: 0.25, ease: "easeOut" }}
       className="my-2"
     >
-      <Collapsible open={open} onOpenChange={setOpen}>
-        {/* ── Header: brain + label + pulse dot + duration ── */}
-        <CollapsibleTrigger
-          className={cn(
-            "group/reasoning-trigger flex items-center gap-2 px-3 py-2 rounded-lg w-full",
-            "border transition-all duration-300",
-            isStreaming
-              ? "border-amber-500/20 bg-amber-500/[0.04]"
+      {/* ── Header: brain + label + pulse dot + duration ── */}
+      <button
+        type="button"
+        onClick={handleToggle}
+        className={cn(
+          "group/reasoning-trigger flex items-center gap-2 px-3 py-2 rounded-lg w-full cursor-pointer",
+          "border transition-all duration-300 text-left",
+          isStreaming
+            ? "border-amber-500/20 bg-amber-500/[0.04]"
+            : open
+              ? "border-amber-500/[0.12] bg-amber-500/[0.03]"
               : "border-amber-500/[0.08] bg-amber-500/[0.02] hover:border-amber-500/15 hover:bg-amber-500/[0.04]",
-          )}
-        >
-          {/* Animated brain icon */}
-          <span className="relative flex items-center justify-center size-4">
-            <Brain
-              className={cn(
-                "size-3.5 transition-colors duration-300",
-                isStreaming ? "text-amber-400" : "text-amber-500/70",
-              )}
-            />
-          </span>
-
-          {/* Label */}
-          <span
+        )}
+        aria-expanded={open}
+        aria-label={open ? "Collapse reasoning" : "Expand reasoning"}
+      >
+        {/* Animated brain icon */}
+        <span className="relative flex items-center justify-center size-4">
+          <Brain
             className={cn(
-              "text-xs font-medium transition-colors duration-300",
+              "size-3.5 transition-colors duration-300",
               isStreaming ? "text-amber-400" : "text-amber-500/70",
             )}
-          >
-            Thinking
-          </span>
-
-          {/* Pulse dot when streaming */}
-          {isStreaming && (
-            <span className="relative flex size-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/50" />
-              <span className="relative inline-flex size-2 rounded-full bg-amber-400" />
-            </span>
-          )}
-
-          {/* Duration badge */}
-          {!isStreaming && (
-            <span className="text-[10px] text-amber-500/40 tabular-nums">
-              ~{estSeconds}s
-            </span>
-          )}
-
-          {/* Spacer */}
-          <span className="flex-1" />
-
-          {/* Chevron */}
-          <ChevronDown
-            className={cn(
-              "size-3.5 transition-all duration-300",
-              isStreaming ? "text-amber-400/60" : "text-amber-500/30",
-              open ? "rotate-0" : "-rotate-90",
-            )}
           />
-        </CollapsibleTrigger>
+        </span>
 
-        {/* ── Content: monospace, properly wrapped, max-height scroll ── */}
-        <CollapsibleContent>
+        {/* Label */}
+        <span
+          className={cn(
+            "text-xs font-medium transition-colors duration-300",
+            isStreaming ? "text-amber-400" : "text-amber-500/70",
+          )}
+        >
+          Thinking
+        </span>
+
+        {/* Pulse dot when streaming */}
+        {isStreaming && (
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/50" />
+            <span className="relative inline-flex size-2 rounded-full bg-amber-400" />
+          </span>
+        )}
+
+        {/* Duration badge */}
+        {!isStreaming && (
+          <span className="text-[10px] text-amber-500/40 tabular-nums">
+            ~{estSeconds}s
+          </span>
+        )}
+
+        {/* Spacer */}
+        <span className="flex-1" />
+
+        {/* Chevron */}
+        <ChevronDown
+          className={cn(
+            "size-3.5 transition-all duration-300",
+            isStreaming ? "text-amber-400/60" : "text-amber-500/30",
+            open ? "rotate-0" : "-rotate-90",
+          )}
+        />
+      </button>
+
+      {/* ── Content: direct conditional render with CSS transition ── */}
+      <div
+        className={cn(
+          "reasoning-content-wrapper overflow-hidden transition-all duration-300 ease-out",
+          open ? "max-h-96 opacity-100 mt-1.5" : "max-h-0 opacity-0 mt-0",
+        )}
+        aria-hidden={!open}
+      >
+        <div
+          className={cn(
+            "reasoning-text-container mx-1 rounded-lg",
+            "border border-amber-500/[0.08]",
+            "bg-gradient-to-b from-amber-500/[0.03] to-transparent",
+            "max-h-72 overflow-y-auto",
+            // Prevent layout jitter during streaming
+            "contain-strict",
+          )}
+          style={{ contain: "strict", contentVisibility: "auto" }}
+        >
           <div
             className={cn(
-              "reasoning-text-container mt-1.5 mx-1 rounded-lg overflow-hidden",
-              "border border-amber-500/[0.08]",
-              "bg-gradient-to-b from-amber-500/[0.03] to-transparent",
-              "max-h-72 overflow-y-auto",
-              // Prevent layout jitter during streaming
-              "contain-strict",
+              "px-4 py-3",
+              // CRITICAL: prevent single-line overflow with all wrapping modes
+              "whitespace-pre-wrap",
+              "[word-break:break-word]",
+              "overflow-wrap-anywhere",
+              // Typography
+              "text-xs leading-relaxed",
+              "font-mono",
+              "text-amber-200/80",
+              "selection:bg-amber-500/20 selection:text-amber-100",
+              // Subtle left accent line
+              "border-l-2 border-amber-500/10 pl-3 ml-1",
             )}
-            style={{ contain: "strict", contentVisibility: "auto" }}
           >
-            <div
-              className={cn(
-                "px-4 py-3",
-                // CRITICAL: prevent single-line overflow with all wrapping modes
-                "whitespace-pre-wrap",
-                "[word-break:break-word]",
-                "overflow-wrap-anywhere",
-                // Typography
-                "text-xs leading-relaxed",
-                "font-mono",
-                "text-amber-200/80",
-                "selection:bg-amber-500/20 selection:text-amber-100",
-                // Subtle left accent line
-                "border-l-2 border-amber-500/10 pl-3 ml-1",
-              )}
-            >
-              {text || (
-                <span className="text-amber-500/30 italic">
-                  Waiting for reasoning…
-                </span>
-              )}
-            </div>
-
-            {/* Bottom fade overlay when scrollable */}
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#08080f] to-transparent"
-              aria-hidden
-            />
+            {text || (
+              <span className="text-amber-500/30 italic">
+                Thinking…
+              </span>
+            )}
           </div>
-        </CollapsibleContent>
-      </Collapsible>
+
+          {/* Bottom fade overlay when scrollable */}
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#08080f] to-transparent"
+            aria-hidden
+          />
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -375,10 +396,19 @@ export const JarvisToolCall = JarvisToolCallView as unknown as ToolCallMessagePa
 
 /* ==========================================================
    GROUP — wraps a series of tool calls + reasoning in a compact strip
+   with aurora fiber gradient left border
    ========================================================== */
 export function JarvisToolStrip({ children }: { children: React.ReactNode }) {
   return (
-    <div className="my-2 space-y-1 border-l-2 border-zinc-800/50 pl-2.5">
+    <div className={cn(
+      "my-2 space-y-1 pl-2.5",
+      // Aurora fiber gradient left border — emerald → violet
+      "border-l-2 border-transparent",
+    )}
+    style={{
+      borderImage: "linear-gradient(to bottom, rgba(16,185,129,0.4), rgba(139,92,246,0.4), transparent) 1",
+    }}
+    >
       {children}
     </div>
   );
@@ -386,38 +416,41 @@ export function JarvisToolStrip({ children }: { children: React.ReactNode }) {
 
 
 /* ==========================================================
-   TEXT — wraps streamed text in a stable, motion-friendly div
-   Used by thread.tsx for assistant text parts
+   TEXT — Stable streaming text with aurora fiber styling
+   - NO re-animation on chunks (prevents jitter)
+   - Glass morphism container with emerald accent
+   - Aurora gradient left border
+   - Delegates markdown + artifact detection to ArtifactAwareText
    ========================================================== */
 import { TextMessagePartComponent } from "@assistant-ui/react";
-import { MarkdownText } from "@/components/assistant-ui/markdown-text";
+import { ArtifactAwareText } from "@/components/artifacts/ArtifactAwareText";
 
 export const JarvisText: TextMessagePartComponent = ({ text }) => {
-  // Split text into paragraphs for staggered animation
-  const paragraphs = text ? text.split(/\n\n+/) : [text];
+  if (!text) return null;
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.15, ease: "easeOut" }}
+    <div
       aria-live="polite"
-      aria-label="Jarvis is typing..."
-      className="whitespace-pre-wrap"
+      aria-label="Jarvis response"
+      className={cn(
+        // Stable container — no re-layout during streaming
+        "relative my-3 rounded-xl overflow-hidden",
+        // Aurora glass morphism
+        "bg-gradient-to-br from-white/[0.03] via-white/[0.01] to-emerald-500/[0.02]",
+        "backdrop-blur-sm",
+        "border border-white/[0.06]",
+        "shadow-[0_0_30px_-10px_rgba(16,185,129,0.05)]",
+        // Emerald aurora left accent
+        "before:absolute before:left-0 before:top-3 before:bottom-3 before:w-[2px]",
+        "before:rounded-full before:bg-gradient-to-b before:from-emerald-400/60 before:via-emerald-500/30 before:to-transparent",
+        // Prevent layout jitter
+        "contain-strict",
+      )}
+      style={{ contain: "strict", contentVisibility: "auto" }}
     >
-      <AnimatePresence mode="popLayout">
-        {paragraphs.map((para, i) => (
-          <motion.span
-            key={`${para.slice(0, 20)}-${i}`}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15, delay: i * 0.03, ease: "easeOut" }}
-            style={{ display: i > 0 ? "block" : "inline" }}
-          >
-            {para}
-            {i < paragraphs.length - 1 && "\n\n"}
-          </motion.span>
-        ))}
-      </AnimatePresence>
-    </motion.div>
+      <div className="px-4 py-3.5 pl-5 text-sm leading-relaxed text-zinc-200">
+        <ArtifactAwareText />
+      </div>
+    </div>
   );
 };
