@@ -3,6 +3,7 @@
 import React from "react";
 import { useLocalRuntime, type ChatModelAdapter, AssistantRuntimeProvider } from "@assistant-ui/react";
 import { toast } from "sonner";
+import { useSessionStore } from "@/lib/session-store";
 
 const LS_MODEL = "jarvis-os:model:v1";
 const LS_SESSION = "jarvis-os:session:v1";
@@ -37,8 +38,8 @@ export function resetConversation() {
 }
 
 function loadModel(): string {
-  if (typeof window === "undefined") return "kimi-k2.6";
-  return localStorage.getItem(LS_MODEL) || "kimi-k2.6";
+  if (typeof window === "undefined") return "deepseek-v4-pro";
+  return localStorage.getItem(LS_MODEL) || "deepseek-v4-pro";
 }
 
 async function consumeSse(reader: ReadableStreamDefaultReader<Uint8Array>, onEvent: (name: string, data: any) => void) {
@@ -166,6 +167,49 @@ const JarvisAdapter: ChatModelAdapter = {
           tc.result = data.output || data.content || "";
           tc.status = { type: data.is_error ? "incomplete" : "complete" };
         }
+      } else if (type === "canvas_synthesis") {
+        // May 27 PRD: canvas_synthesis is a signal event only.
+        // NO markdown appended to accumulatedText — canvas renders via tool_call inline card.
+        // The create_slack_canvas tool_call event drives the frontend makeAssistantToolUI intercept.
+        // Keep for backwards-compat: if tool_call_id is present, skip; else log.
+        if (data.tool_call_id) {
+          // tool_call already emitted — nothing to do here
+        } else if (data.markdown) {
+          // Legacy path — but prefer tool_call
+          if (accumulatedText && !accumulatedText.endsWith("\n\n")) accumulatedText += "\n\n";
+          accumulatedText += data.markdown;
+        }
+        // NO slack_url link injection — side-sheet handles navigation
+      } else if (type === "canvas") {
+        // Phase 1 Canvas: open canvas overlay via zustand store
+        // Format: { type:"canvas", action:"open", template:"weekly-digest", data:{...}, title:"..." }
+        if (data.action === "open" && typeof window !== "undefined") {
+          try {
+            const { useCanvasStore } = await import("@/lib/stores/canvas-store");
+            useCanvasStore.getState().open({
+              template: data.template ?? "generic",
+              data: data.data ?? {},
+              title: data.title,
+            });
+          } catch (e) {
+            console.warn("[canvas] failed to open canvas overlay:", e);
+          }
+        }
+      } else if (type === "canvas_url") {
+        // Phase 1 Canvas: shareable URL
+        // Format: { type:"canvas_url", action:"share", url:"https://...", canvasId:"abc123" }
+        if (data.action === "share" && data.url && typeof window !== "undefined") {
+          try {
+            const { useCanvasStore } = await import("@/lib/stores/canvas-store");
+            useCanvasStore.getState().setUrl(data.url);
+            // Also copy to clipboard for quick sharing
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(data.url).catch(() => {});
+            }
+          } catch (e) {
+            console.warn("[canvas_url] failed to set url:", e);
+          }
+        }
       } else if (type === "error") {
         accumulatedText += `\n\n⚠ Error: ${data.error || "unknown"}`;
       } else if (type === "done") {
@@ -180,6 +224,38 @@ const JarvisAdapter: ChatModelAdapter = {
     }
 
     yield { content: buildContent() };
+
+    // PERSIST FINAL MESSAGE TO SESSION-STORE for ConversationHydrator survival on refresh
+    try {
+      const final = buildContent();
+      const hasContent = final.some((p: any) =>
+        (p.type === "text" && p.text) ||
+        (p.type === "reasoning" && p.text)
+      );
+      if (hasContent) {
+        const cid = getOrCreateCid();
+        const store = useSessionStore.getState();
+        const existing = store.getCachedMessages(cid) || [];
+        store.cacheMessages(cid, [...existing, {
+          id: `asst-stream-${Date.now()}`,
+          role: "assistant" as const,
+          content: accumulatedText,
+          parts: final.map((p: any) => {
+            if (p.type === "tool-call") return {
+              type: "tool-call" as const,
+              toolCallId: p.toolCallId,
+              toolName: p.toolName,
+              args: p.args,
+              result: p.result,
+              status: typeof p.status?.type === "string" ? p.status.type : "complete",
+            };
+            return p;
+          }),
+          seq: Date.now(),
+          timestamp: Date.now() / 1000,
+        }], Date.now());
+      }
+    } catch { /* non-critical — best-effort cache */ }
   },
 };
 
