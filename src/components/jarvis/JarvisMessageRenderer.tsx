@@ -4,6 +4,15 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Brain,
+  FileText,
+  Pencil,
+  Trash2,
+  Database,
+  Rocket,
+  Search,
+  Send,
+  Globe,
+
   ChevronDown,
   Loader2,
   CheckCircle2,
@@ -263,6 +272,29 @@ function resultPreview(result: any): string {
   return text.slice(0, 197) + "…";
 }
 
+
+function toolKindMeta(toolName: string): { icon: React.ElementType; label: string; accent: string } {
+  const n = (toolName || "").toLowerCase();
+  const has = (...k: string[]) => k.some((s) => n.includes(s));
+  if (has("deploy", "build", "vercel", "run_command", "exec", "shell"))
+    return { icon: Rocket, label: "Deploy", accent: "text-orange-400" };
+  if (has("delete", "remove", "destroy"))
+    return { icon: Trash2, label: "Delete", accent: "text-red-400" };
+  if (has("write", "edit", "create", "update", "replace", "save", "patch"))
+    return { icon: Pencil, label: "Edit", accent: "text-emerald-400" };
+  if (has("query", "sql", "filter", "entit", "db", "database", "select"))
+    return { icon: Database, label: "Query", accent: "text-purple-400" };
+  if (has("search", "grep", "find", "web", "perplex", "google"))
+    return { icon: Search, label: "Search", accent: "text-cyan-400" };
+  if (has("slack", "email", "sms", "send", "message", "notify"))
+    return { icon: Send, label: "Send", accent: "text-sky-400" };
+  if (has("fetch", "http", "url", "browse"))
+    return { icon: Globe, label: "Fetch", accent: "text-teal-400" };
+  if (has("read", "get", "list", "view", "cat", "lookup", "load"))
+    return { icon: FileText, label: "Read", accent: "text-blue-400" };
+  return { icon: Wrench, label: "Tool", accent: "text-zinc-400" };
+}
+
 export function JarvisToolCallView({
   toolName,
   args,
@@ -291,6 +323,8 @@ export function JarvisToolCallView({
 
   const argSummary = summarizeArgs(args);
   const cleanName = toolName.replace(/^mcp__base44_tools__/, "").replace(/^mcp__/, "");
+  const kind = toolKindMeta(toolName);
+  const KindIcon = kind.icon;
   const preview = isComplete || isError ? resultPreview(result) : "";
 
   return (
@@ -309,8 +343,11 @@ export function JarvisToolCallView({
         {/* ── Header Row ── */}
         <CollapsibleTrigger className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.03] transition-colors rounded-lg">
           <Icon className={cn("size-3.5 flex-shrink-0", meta.color, isRunning && "animate-spin")} />
-          <Wrench className="size-3 text-zinc-500 flex-shrink-0" />
-          <span className="text-xs font-mono font-medium text-zinc-200 truncate">{cleanName}</span>
+          <span className={cn("inline-flex items-center justify-center size-5 rounded-md bg-white/[0.04] flex-shrink-0", kind.accent)}>
+            <KindIcon className="size-3" />
+          </span>
+          <span className={cn("text-xs font-semibold flex-shrink-0", kind.accent)}>{kind.label}</span>
+          <span className="text-xs font-mono text-zinc-400 truncate">{cleanName}</span>
           {argSummary && (
             <span className="text-[10px] font-mono text-zinc-500 truncate flex-1">
               {argSummary}
