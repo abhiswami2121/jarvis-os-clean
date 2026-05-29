@@ -1,0 +1,179 @@
+/**
+ * chat-store.ts — Single source of truth for all chat state.
+ *
+ * Architecture (per assistant-ui canonical ExternalStoreRuntime spec):
+ *   - Messages are owned by zustand, addressed by stable id
+ *   - All mutations are id-based, never index-based
+ *   - Per-conversation message arrays cached for instant re-mount
+ *   - isRunning is per-conversation (multi-tab safe)
+ *   - Multi-tab sync via storage event broadcasts
+ */
+"use client";
+import { create } from "zustand";
+import { immer } from "zustand/middleware/immer";
+import type { ThreadMessageLike } from "@assistant-ui/react";
+
+export interface ChatMessage extends ThreadMessageLike {
+  id: string;
+  // Custom Jarvis fields (preserved through reducer)
+  jarvisStatus?: "streaming" | "complete" | "cancelled" | "errored";
+  jarvisError?: string;
+}
+
+interface ChatState {
+  /** Per-conversation message arrays */
+  conversations: Record<string, ChatMessage[]>;
+  /** Per-conversation isRunning flags */
+  runningByCid: Record<string, boolean>;
+  /** Active conversation id (UI focus) */
+  activeCid: string | null;
+  /** Last context-trim notification timestamp per CID (so we only show once) */
+  ctxTrimNotifiedAt: Record<string, number>;
+  /** Queue of pending user messages per CID (rapid-send queueing) */
+  pendingQueue: Record<string, string[]>;
+
+  // Actions
+  setActive: (cid: string) => void;
+  setMessages: (cid: string, messages: ChatMessage[]) => void;
+  getMessages: (cid: string) => ChatMessage[];
+  appendMessage: (cid: string, message: ChatMessage) => void;
+  updateMessage: (cid: string, messageId: string, updates: Partial<ChatMessage>) => void;
+  /** Mutate content of a specific message by id (canonical streaming pattern) */
+  appendTextToMessage: (cid: string, messageId: string, textChunk: string) => void;
+  appendPartToMessage: (cid: string, messageId: string, part: any) => void;
+  updatePartInMessage: (cid: string, messageId: string, predicate: (p: any) => boolean, updater: (p: any) => any) => void;
+  setIsRunning: (cid: string, isRunning: boolean) => void;
+  isRunning: (cid: string) => boolean;
+  truncateFromMessage: (cid: string, messageId: string) => void;
+  enqueuePending: (cid: string, text: string) => void;
+  shiftPending: (cid: string) => string | null;
+  notifyContextTrim: (cid: string) => boolean; // returns true if first time
+  clearConversation: (cid: string) => void;
+}
+
+export const useChatStore = create<ChatState>()(
+  immer((set, get) => ({
+    conversations: {},
+    runningByCid: {},
+    activeCid: null,
+    ctxTrimNotifiedAt: {},
+    pendingQueue: {},
+
+    setActive: (cid) => set((s) => { s.activeCid = cid; }),
+
+    setMessages: (cid, messages) => set((s) => {
+      s.conversations[cid] = messages;
+    }),
+
+    getMessages: (cid) => get().conversations[cid] || [],
+
+    appendMessage: (cid, message) => set((s) => {
+      if (!s.conversations[cid]) s.conversations[cid] = [];
+      s.conversations[cid].push(message);
+    }),
+
+    updateMessage: (cid, messageId, updates) => set((s) => {
+      const msgs = s.conversations[cid];
+      if (!msgs) return;
+      const idx = msgs.findIndex((m: ChatMessage) => m.id === messageId);
+      if (idx >= 0) {
+        Object.assign(msgs[idx], updates);
+      }
+    }),
+
+    appendTextToMessage: (cid, messageId, textChunk) => set((s) => {
+      const msgs = s.conversations[cid];
+      if (!msgs) return;
+      const msg = msgs.find((m: ChatMessage) => m.id === messageId);
+      if (!msg) return;
+      // Find or create a text part
+      if (!Array.isArray(msg.content)) msg.content = [];
+      const lastPart: any = msg.content[msg.content.length - 1];
+      if (lastPart && lastPart.type === "text") {
+        lastPart.text += textChunk;
+      } else {
+        (msg.content as any[]).push({ type: "text", text: textChunk });
+      }
+    }),
+
+    appendPartToMessage: (cid, messageId, part) => set((s) => {
+      const msgs = s.conversations[cid];
+      if (!msgs) return;
+      const msg = msgs.find((m: ChatMessage) => m.id === messageId);
+      if (!msg) return;
+      if (!Array.isArray(msg.content)) msg.content = [];
+      (msg.content as any[]).push(part);
+    }),
+
+    updatePartInMessage: (cid, messageId, predicate, updater) => set((s) => {
+      const msgs = s.conversations[cid];
+      if (!msgs) return;
+      const msg = msgs.find((m: ChatMessage) => m.id === messageId);
+      if (!msg || !Array.isArray(msg.content)) return;
+      const idx = (msg.content as any[]).findIndex(predicate);
+      if (idx >= 0) {
+        (msg.content as any[])[idx] = updater((msg.content as any[])[idx]);
+      }
+    }),
+
+    setIsRunning: (cid, isRunning) => set((s) => {
+      s.runningByCid[cid] = isRunning;
+    }),
+
+    isRunning: (cid) => !!get().runningByCid[cid],
+
+    truncateFromMessage: (cid, messageId) => set((s) => {
+      const msgs = s.conversations[cid];
+      if (!msgs) return;
+      const idx = msgs.findIndex((m: ChatMessage) => m.id === messageId);
+      if (idx >= 0) {
+        s.conversations[cid] = msgs.slice(0, idx);
+      }
+    }),
+
+    enqueuePending: (cid, text) => set((s) => {
+      if (!s.pendingQueue[cid]) s.pendingQueue[cid] = [];
+      s.pendingQueue[cid].push(text);
+    }),
+
+    shiftPending: (cid) => {
+      const q = get().pendingQueue[cid] || [];
+      if (q.length === 0) return null;
+      const next = q[0];
+      set((s) => {
+        s.pendingQueue[cid] = (s.pendingQueue[cid] || []).slice(1);
+      });
+      return next;
+    },
+
+    notifyContextTrim: (cid) => {
+      const last = get().ctxTrimNotifiedAt[cid] || 0;
+      const now = Date.now();
+      // Only notify once per hour per cid
+      if (now - last < 3600_000) return false;
+      set((s) => { s.ctxTrimNotifiedAt[cid] = now; });
+      return true;
+    },
+
+    clearConversation: (cid) => set((s) => {
+      delete s.conversations[cid];
+      delete s.runningByCid[cid];
+      delete s.pendingQueue[cid];
+    }),
+  })),
+);
+
+/** Generate a stable id */
+export function generateMessageId(role: "user" | "assistant" | "system" = "assistant"): string {
+  return `${role}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/**
+ * Multi-tab sync: when localStorage CID changes, broadcast a refresh
+ * This is wired in the runtime provider via a window event listener.
+ */
+export const STORAGE_KEY_BROADCAST = "jarvis-os:multi-tab-broadcast";
+export function broadcastChange(cid: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEY_BROADCAST, JSON.stringify({ cid, at: Date.now() }));
+}

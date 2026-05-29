@@ -1,0 +1,222 @@
+"use client";
+
+import React, { useCallback, useEffect, useRef } from "react";
+import {
+  useExternalStoreRuntime,
+  AssistantRuntimeProvider,
+  type AppendMessage,
+  type ThreadMessageLike,
+} from "@assistant-ui/react";
+import { toast } from "sonner";
+import { useChatStore, type ChatMessage, generateMessageId, STORAGE_KEY_BROADCAST, broadcastChange } from "@/lib/chat-store";
+import { streamJarvisResponse } from "@/lib/jarvis-stream";
+
+const LS_MODEL = "jarvis-os:model:v1";
+const LS_CID = "jarvis-os:cid:v1";
+
+function loadModel(): string {
+  if (typeof window === "undefined") return "kimi-k2.6";
+  return localStorage.getItem(LS_MODEL) || "kimi-k2.6";
+}
+
+/**
+ * Converts our internal ChatMessage to the format assistant-ui expects.
+ * Critical: preserve id so mutations are stable across renders.
+ */
+function convertMessage(m: ChatMessage): ThreadMessageLike {
+  return {
+    id: m.id,
+    role: m.role,
+    content: Array.isArray(m.content) ? (m.content as any[]) : [{ type: "text", text: String(m.content || "") }],
+    createdAt: (m as any).createdAt,
+  } as ThreadMessageLike;
+}
+
+/**
+ * Extract text from an AppendMessage (assistant-ui input format).
+ */
+function extractText(message: AppendMessage): string {
+  if (typeof message.content === "string") return message.content;
+  if (Array.isArray(message.content)) {
+    return message.content
+      .filter((p: any) => p?.type === "text")
+      .map((p: any) => p.text)
+      .join("");
+  }
+  return "";
+}
+
+export function JarvisRuntimeProvider({
+  children,
+  conversationId,
+}: {
+  children: React.ReactNode;
+  conversationId: string;
+}) {
+  const cid = conversationId;
+  const messages = useChatStore((s) => s.conversations[cid] || []);
+  const isRunning = useChatStore((s) => s.runningByCid[cid] || false);
+  const appendMessage = useChatStore((s) => s.appendMessage);
+  const truncateFromMessage = useChatStore((s) => s.truncateFromMessage);
+  const enqueuePending = useChatStore((s) => s.enqueuePending);
+  const shiftPending = useChatStore((s) => s.shiftPending);
+  const setActive = useChatStore((s) => s.setActive);
+  const setIsRunning = useChatStore((s) => s.setIsRunning);
+  const setMessages = useChatStore((s) => s.setMessages);
+
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Mark active conversation on mount, store CID
+  useEffect(() => {
+    setActive(cid);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(LS_CID, cid);
+    }
+  }, [cid, setActive]);
+
+  // EDGE CASE #11: Multi-tab sync via storage events
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY_BROADCAST && e.newValue) {
+        try {
+          const data = JSON.parse(e.newValue);
+          if (data.cid === cid) {
+            // Another tab updated this conversation — force refresh from VPS
+            toast.info("Synced from another tab", { duration: 2000 });
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, [cid]);
+
+  // Process pending queue (edge case #10: rapid send)
+  const processPending = useCallback(async () => {
+    if (useChatStore.getState().isRunning(cid)) return;
+    const next = shiftPending(cid);
+    if (!next) return;
+    await runMessage(next);
+  }, [cid, shiftPending]);
+
+  // Core message runner — wraps streamJarvisResponse with all the safety nets
+  const runMessage = useCallback(async (text: string, alreadyAppendedUser = false) => {
+    if (!text.trim()) return;
+
+    // Append user message if not already done
+    if (!alreadyAppendedUser) {
+      appendMessage(cid, {
+        id: generateMessageId("user"),
+        role: "user",
+        content: [{ type: "text", text }],
+      } as ChatMessage);
+    }
+
+    // Fresh abort controller for this turn
+    abortRef.current = new AbortController();
+
+    const currentMessages = useChatStore.getState().getMessages(cid);
+    await streamJarvisResponse({
+      cid,
+      messages: currentMessages,
+      profile: loadModel(),
+      abortSignal: abortRef.current.signal,
+      onAuthError: () => {
+        toast.error("Auth required", {
+          description: "Reconnect to continue",
+          action: { label: "Reconnect", onClick: () => window.location.reload() },
+        });
+      },
+    });
+
+    broadcastChange(cid);
+
+    // Drain queue
+    setTimeout(() => processPending(), 100);
+  }, [cid, appendMessage, processPending]);
+
+  // === HANDLER 1: onNew (required) ==========================================
+  const onNew = useCallback(async (message: AppendMessage) => {
+    const text = extractText(message);
+    if (!text) return;
+
+    // Edge case #10: rapid send during streaming → queue
+    if (useChatStore.getState().isRunning(cid)) {
+      enqueuePending(cid, text);
+      toast.info("Queued — will send when current finishes", { duration: 2500 });
+      return;
+    }
+
+    await runMessage(text);
+  }, [cid, runMessage, enqueuePending]);
+
+  // === HANDLER 2: onCancel (Stop button) ====================================
+  const onCancel = useCallback(async () => {
+    if (abortRef.current) abortRef.current.abort();
+    setIsRunning(cid, false);
+  }, [cid, setIsRunning]);
+
+  // === HANDLER 3: onEdit (user edits a previous message) =====================
+  const onEdit = useCallback(async (message: AppendMessage) => {
+    const msgs = useChatStore.getState().getMessages(cid);
+    // parentId is the message BEFORE the one being edited
+    const parentIdx = msgs.findIndex((m) => m.id === message.parentId);
+    // Truncate everything AFTER parent (including the edited message and any assistant replies)
+    if (parentIdx >= 0) {
+      setMessages(cid, msgs.slice(0, parentIdx + 1));
+    } else {
+      setMessages(cid, []);
+    }
+    // Run with the edited content
+    const text = extractText(message);
+    await runMessage(text);
+  }, [cid, setMessages, runMessage]);
+
+  // === HANDLER 4: onReload (regenerate last assistant message) ===============
+  const onReload = useCallback(async () => {
+    const msgs = useChatStore.getState().getMessages(cid);
+    // Find last user message
+    let lastUserIdx = -1;
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].role === "user") { lastUserIdx = i; break; }
+    }
+    if (lastUserIdx < 0) return;
+    // Truncate everything after the last user message
+    setMessages(cid, msgs.slice(0, lastUserIdx + 1));
+    // Re-run with the last user text
+    const lastUserText = (() => {
+      const u = msgs[lastUserIdx];
+      if (typeof u.content === "string") return u.content;
+      if (Array.isArray(u.content)) {
+        return u.content.filter((p: any) => p.type === "text").map((p: any) => p.text).join("");
+      }
+      return "";
+    })();
+    await runMessage(lastUserText, true);
+  }, [cid, setMessages, runMessage]);
+
+  // Build the runtime with all canonical handlers
+  const runtime = useExternalStoreRuntime({
+    messages,
+    isRunning,
+    convertMessage,
+    onNew,
+    onCancel,
+    onEdit,
+    onReload,
+  });
+
+  return <AssistantRuntimeProvider runtime={runtime}>{children}</AssistantRuntimeProvider>;
+}
+
+export { LS_MODEL };
+
+/** Compat helper for old call sites */
+export function setConversationId(cid: string) {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(LS_CID, cid);
+}
+export function resetConversation() {
+  if (typeof window !== "undefined") sessionStorage.removeItem(LS_CID);
+}

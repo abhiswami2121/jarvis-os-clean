@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
-import { MessageSquarePlus, MessageSquare, Sparkles, X, Trash2, Loader2 } from "lucide-react";
+import { useRouter, useParams, usePathname } from "next/navigation";
+import { MessageSquarePlus, MessageSquare, Sparkles, X, Trash2, Loader2, FileText, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useConversationList } from "@/hooks/useConversationList";
 import { formatRelativeTime, newConversationId, type Conversation } from "@/lib/jarvis-os-client";
@@ -13,7 +13,7 @@ export function ChatSidebar({ open, onOpenChange }: { open: boolean; onOpenChang
   const router = useRouter();
   const params = useParams<{ id?: string }>();
   const activeId = (params?.id as string | undefined) || null;
-  const { conversations, loading, error, refresh } = useConversationList();
+  const { conversations, loading, error, refresh } = useConversationList("aswa0617@gmail.com");
 
   const handleNew = () => {
     const id = newConversationId();
@@ -36,12 +36,12 @@ export function ChatSidebar({ open, onOpenChange }: { open: boolean; onOpenChang
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -300, opacity: 0 }}
           transition={{ type: "spring", stiffness: 380, damping: 30 }}
-          className="relative z-20 flex w-72 flex-col border-r border-white/[0.06] bg-white/[0.02] backdrop-blur-xl"
+          className="relative z-20 flex w-72 flex-col border-r border-white/[0.05] bg-white/[0.02] backdrop-blur-xl"
         >
           {/* Header */}
           <div className="flex h-14 items-center justify-between px-4 border-b border-white/[0.04]">
             <Link href="/chat" className="flex items-center gap-2 group">
-              <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-cyan-500 shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow">
+              <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-shadow">
                 <Sparkles className="size-3.5 text-white" />
               </div>
               <span className="text-sm font-semibold tracking-tight">Jarvis</span>
@@ -55,7 +55,7 @@ export function ChatSidebar({ open, onOpenChange }: { open: boolean; onOpenChang
           <div className="p-3">
             <button
               onClick={handleNew}
-              className="flex w-full items-center gap-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-cyan-500/20 border border-white/10 px-3 py-2.5 text-sm font-medium hover:from-purple-500/30 hover:to-cyan-500/30 transition-all hover:border-white/20"
+              className="flex w-full items-center gap-2 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20 px-3 py-2.5 text-sm font-medium text-emerald-300 hover:bg-emerald-500/[0.14] hover:border-emerald-500/30 hover:shadow-[0_0_20px_rgb(16_185_129_/_0.12)] transition-all"
             >
               <MessageSquarePlus className="size-4" />
               New conversation
@@ -80,15 +80,24 @@ export function ChatSidebar({ open, onOpenChange }: { open: boolean; onOpenChang
                 No conversations yet.<br/>Click <span className="text-zinc-300">New conversation</span> to start.
               </div>
             )}
-            {conversations.map((c) => (
-              <ConversationRow
+            {conversations.map((c, i) => (
+              <motion.div
                 key={c.id}
-                conversation={c}
-                active={c.id === activeId}
-                onSelect={() => handleSelect(c.id)}
-              />
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: i * 0.05, ease: "easeOut" }}
+              >
+                <ConversationRow
+                  conversation={c}
+                  active={c.id === activeId}
+                  onSelect={() => handleSelect(c.id)}
+                />
+              </motion.div>
             ))}
           </div>
+
+          {/* Navigation */}
+          <SidebarNav />
 
           <div className="border-t border-white/[0.04] px-3 py-2.5 text-[10px] text-zinc-500 flex items-center justify-between">
             <span>Jarvis·OS·K2.6</span>
@@ -104,9 +113,9 @@ function ConversationRow({ conversation, active, onSelect }: { conversation: Con
   return (
     <button
       onClick={onSelect}
-      className={`group relative w-full rounded-lg mb-0.5 transition-all flex items-center gap-2 px-2 py-1.5 text-left hover:bg-white/[0.04] ${active ? "bg-white/[0.06] ring-1 ring-white/10" : ""}`}
+      className={`group relative w-full rounded-lg mb-0.5 transition-all flex items-center gap-2 px-2 py-1.5 text-left hover:bg-white/[0.04] ${active ? "bg-emerald-500/[0.05] ring-1 ring-emerald-500/30" : ""}`}
     >
-      <MessageSquare className={`size-3.5 flex-shrink-0 ${active ? "text-cyan-400" : "text-zinc-500 group-hover:text-zinc-300"}`} />
+      <MessageSquare className={`size-3.5 flex-shrink-0 ${active ? "text-emerald-400" : "text-zinc-500 group-hover:text-zinc-300"}`} />
       <div className="flex-1 min-w-0">
         <div className="text-xs font-medium text-zinc-200 truncate">
           {conversation.title || "New chat"}
@@ -122,5 +131,61 @@ function ConversationRow({ conversation, active, onSelect }: { conversation: Con
         </div>
       </div>
     </button>
+  );
+}
+
+/* ─── Bottom Navigation ─── */
+
+function SidebarNav() {
+  const pathname = usePathname();
+  const isDocuments = pathname?.startsWith("/documents");
+
+  return (
+    <div className="border-t border-white/[0.04] px-2 py-2">
+      <nav className="flex flex-col gap-0.5">
+        <NavItem
+          href="/chat"
+          icon={MessageSquare}
+          label="Chat"
+          active={!isDocuments}
+        />
+        <NavItem
+          href="/documents"
+          icon={FileText}
+          label="Documents"
+          active={isDocuments}
+        />
+      </nav>
+    </div>
+  );
+}
+
+function NavItem({
+  href,
+  icon: Icon,
+  label,
+  active,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all ${
+        active
+          ? "bg-emerald-500/[0.08] text-emerald-300 border border-emerald-500/20"
+          : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
+      }`}
+    >
+      <Icon
+        className={`size-3.5 ${
+          active ? "text-emerald-400" : "text-zinc-500"
+        }`}
+      />
+      {label}
+    </Link>
   );
 }

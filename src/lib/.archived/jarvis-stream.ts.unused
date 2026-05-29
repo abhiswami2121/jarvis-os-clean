@@ -1,0 +1,256 @@
+/**
+ * jarvis-stream.ts — Unified streaming engine for Jarvis-OS chat.
+ *
+ * Single function `streamJarvisResponse()` handles:
+ *   - POST /api/agent with messages + cid
+ *   - SSE consumption + event dispatch to chat-store mutations
+ *   - AbortSignal for cancellation (kills VPS session via DELETE)
+ *   - Exponential backoff retry on network errors (edge case #3)
+ *   - Empty-stream-end detection (edge case #7)
+ *   - 401/403 auth banner trigger (edge case #6)
+ */
+"use client";
+import { useChatStore, type ChatMessage, generateMessageId } from "@/lib/chat-store";
+import { trimContextWindow } from "@/hooks/useContextWindow";
+import { toast } from "sonner";
+
+const MAX_CONTEXT_MESSAGES = 20;
+const MAX_RETRIES = 3;
+const BACKOFF_BASE_MS = 600;
+
+export interface StreamOptions {
+  cid: string;
+  messages: ChatMessage[];
+  profile?: string;
+  abortSignal?: AbortSignal;
+  onAuthError?: () => void;
+}
+
+export interface StreamResult {
+  assistantId: string;
+  status: "complete" | "cancelled" | "errored" | "empty";
+  error?: string;
+  sessionId?: string;
+}
+
+function flattenMessages(messages: ChatMessage[]) {
+  return messages.map((m) => {
+    let text = "";
+    if (typeof m.content === "string") text = m.content;
+    else if (Array.isArray(m.content)) {
+      for (const part of m.content) {
+        if ((part as any)?.type === "text" && (part as any).text) text += (part as any).text;
+      }
+    }
+    return { role: m.role, content: text };
+  }).filter((m) => m.content.length > 0);
+}
+
+async function consumeSse(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  onEvent: (name: string, data: any) => void,
+): Promise<void> {
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop() || "";
+    for (const part of parts) {
+      if (!part.trim() || part.startsWith(":")) continue;
+      const lines = part.split("\n");
+      let evName = "message";
+      let dataLine = "";
+      for (const line of lines) {
+        if (line.startsWith("event:")) evName = line.slice(6).trim();
+        else if (line.startsWith("data:")) dataLine = line.slice(5).trim();
+      }
+      if (!dataLine) continue;
+      try { onEvent(evName, JSON.parse(dataLine)); } catch { /* ignore malformed */ }
+    }
+  }
+}
+
+export async function streamJarvisResponse(opts: StreamOptions): Promise<StreamResult> {
+  const { cid, messages, profile, abortSignal, onAuthError } = opts;
+  const store = useChatStore.getState();
+
+  // 1. CONTEXT WINDOW TRIM (edge case #9)
+  const flatMessages = flattenMessages(messages);
+  const { trimmed, removedCount } = trimContextWindow(flatMessages, {
+    maxRecent: MAX_CONTEXT_MESSAGES - 1,
+    alwaysKeepFirst: 1,
+  });
+  if (removedCount > 0 && store.notifyContextTrim(cid)) {
+    toast.info(`Context trimmed: ${removedCount} earlier messages dropped`, {
+      description: "Older context is preserved in conversation history",
+      duration: 4000,
+    });
+  }
+
+  // 2. CREATE ASSISTANT PLACEHOLDER (canonical mutate-by-id pattern)
+  const assistantId = generateMessageId("assistant");
+  store.appendMessage(cid, {
+    id: assistantId,
+    role: "assistant",
+    content: [],
+    jarvisStatus: "streaming",
+  });
+  store.setIsRunning(cid, true);
+
+  // 3. RETRY LOOP with exponential backoff
+  let lastError: string | null = null;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    if (abortSignal?.aborted) {
+      store.updateMessage(cid, assistantId, { jarvisStatus: "cancelled" });
+      store.setIsRunning(cid, false);
+      return { assistantId, status: "cancelled" };
+    }
+
+    try {
+      const res = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: trimmed,
+          profile: profile || "kimi-k2.6",
+          conversation_id: cid,
+        }),
+        signal: abortSignal,
+      });
+
+      // 4. AUTH ERROR (edge case #6)
+      if (res.status === 401 || res.status === 403) {
+        store.updateMessage(cid, assistantId, {
+          jarvisStatus: "errored",
+          jarvisError: "Authentication required — please reconnect",
+        });
+        store.setIsRunning(cid, false);
+        onAuthError?.();
+        return { assistantId, status: "errored", error: "auth" };
+      }
+
+      if (!res.ok) {
+        lastError = `HTTP ${res.status}`;
+        // 5xx: retry with backoff
+        if (res.status >= 500 && attempt < MAX_RETRIES - 1) {
+          await new Promise((r) => setTimeout(r, BACKOFF_BASE_MS * Math.pow(2, attempt)));
+          continue;
+        }
+        store.updateMessage(cid, assistantId, {
+          jarvisStatus: "errored",
+          jarvisError: lastError,
+        });
+        store.setIsRunning(cid, false);
+        return { assistantId, status: "errored", error: lastError };
+      }
+
+      if (!res.body) {
+        store.updateMessage(cid, assistantId, {
+          jarvisStatus: "errored",
+          jarvisError: "No response stream",
+        });
+        store.setIsRunning(cid, false);
+        return { assistantId, status: "errored", error: "no_body" };
+      }
+
+      // 5. CONSUME SSE STREAM
+      let activeSid: string | null = null;
+      let receivedAnyContent = false;
+      const reader = res.body.getReader();
+
+      // Wire abort signal to cancel VPS session
+      const cancelHandler = () => {
+        if (activeSid) {
+          fetch(`/api/agent?sid=${encodeURIComponent(activeSid)}`, {
+            method: "DELETE",
+          }).catch(() => {});
+        }
+      };
+      if (abortSignal) {
+        if (abortSignal.aborted) { cancelHandler(); }
+        else abortSignal.addEventListener("abort", cancelHandler, { once: true });
+      }
+
+      await consumeSse(reader, (name, data) => {
+        const type = data.type || name;
+
+        if (type === "session" || type === "system") {
+          if (data.session_id) activeSid = data.session_id;
+        } else if (type === "text") {
+          if (data.text) {
+            store.appendTextToMessage(cid, assistantId, data.text);
+            receivedAnyContent = true;
+          }
+        } else if (type === "reasoning" || type === "thinking") {
+          if (data.text) {
+            store.appendPartToMessage(cid, assistantId, { type: "reasoning", text: data.text });
+            receivedAnyContent = true;
+          }
+        } else if (type === "tool_use" || type === "tool_call") {
+          store.appendPartToMessage(cid, assistantId, {
+            type: "tool-call",
+            toolCallId: data.id || `t_${Date.now()}`,
+            toolName: data.name || "tool",
+            args: data.input || data.args || {},
+            status: { type: "running" },
+          });
+          receivedAnyContent = true;
+        } else if (type === "tool_result") {
+          store.updatePartInMessage(
+            cid, assistantId,
+            (p) => p.type === "tool-call" && p.toolCallId === data.id,
+            (p) => ({
+              ...p,
+              result: data.output || data.content || "",
+              status: { type: data.is_error ? "incomplete" : "complete" },
+            }),
+          );
+        } else if (type === "error") {
+          store.appendTextToMessage(cid, assistantId, `\n\n⚠ Error: ${data.error || "unknown"}`);
+          receivedAnyContent = true;
+        }
+      });
+
+      // 6. EMPTY STREAM END (edge case #7)
+      if (!receivedAnyContent) {
+        store.updateMessage(cid, assistantId, {
+          jarvisStatus: "errored",
+          jarvisError: "Empty response from agent",
+        });
+        store.appendTextToMessage(cid, assistantId, "_(empty response)_");
+        store.setIsRunning(cid, false);
+        return { assistantId, status: "empty", sessionId: activeSid || undefined };
+      }
+
+      // 7. SUCCESS
+      store.updateMessage(cid, assistantId, { jarvisStatus: "complete" });
+      store.setIsRunning(cid, false);
+      return { assistantId, status: "complete", sessionId: activeSid || undefined };
+
+    } catch (err: any) {
+      lastError = err?.message || String(err);
+      // AbortError = user cancelled
+      if (err?.name === "AbortError" || abortSignal?.aborted) {
+        store.updateMessage(cid, assistantId, { jarvisStatus: "cancelled" });
+        store.setIsRunning(cid, false);
+        return { assistantId, status: "cancelled" };
+      }
+      // Network error: retry with backoff (edge case #3)
+      if (attempt < MAX_RETRIES - 1) {
+        await new Promise((r) => setTimeout(r, BACKOFF_BASE_MS * Math.pow(2, attempt)));
+        continue;
+      }
+    }
+  }
+
+  // All retries exhausted
+  store.updateMessage(cid, assistantId, {
+    jarvisStatus: "errored",
+    jarvisError: lastError || "Connection failed after retries",
+  });
+  store.setIsRunning(cid, false);
+  return { assistantId, status: "errored", error: lastError || "retries_exhausted" };
+}

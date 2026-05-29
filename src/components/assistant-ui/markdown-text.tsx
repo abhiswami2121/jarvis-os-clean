@@ -11,6 +11,7 @@ import {
 import remarkGfm from "remark-gfm";
 import { type FC, memo, useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
+import { toast } from "sonner";
 
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { cn } from "@/lib/utils";
@@ -27,21 +28,40 @@ const MarkdownTextImpl = () => {
 
 export const MarkdownText = memo(MarkdownTextImpl);
 
+/** Extract plain text content from React children for heuristics */
+function extractCodeContent(children: React.ReactNode): string {
+  if (typeof children === "string") return children;
+  if (Array.isArray(children)) return children.map((c) => (typeof c === "string" ? c : "")).join("");
+  return "";
+}
+
+/** Detect unclosed backtick blocks — missing closing ``` */
+function detectUnclosedBlock(code: string): boolean {
+  if (!code) return false;
+  // If the code starts with a backtick fence, it's likely an unclosed block
+  if (/^```/.test(code.trimStart())) return true;
+  // If the code has an opening ``` but no closing ```, it's unclosed
+  const openingFences = (code.match(/^```/gm) || []).length;
+  if (openingFences === 1) return true;
+  return false;
+}
+
 const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
   const { isCopied, copyToClipboard } = useCopyToClipboard();
   const onCopy = () => {
     if (!code || isCopied) return;
     copyToClipboard(code);
+    toast.success("Copied!", { duration: 2000 });
   };
 
   return (
-    <div className="aui-code-header-root mt-2.5 flex items-center justify-between rounded-t-lg border border-border/50 border-b-0 bg-muted/50 px-3 py-1.5 text-xs">
-      <span className="aui-code-header-language font-medium text-muted-foreground lowercase">
-        {language}
+    <div className="aui-code-header-root mt-2.5 flex items-center justify-between rounded-t-lg border border-zinc-700/50 border-b-0 bg-zinc-900/80 px-3 py-1.5 text-xs">
+      <span className="aui-code-header-language inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400 uppercase tracking-wider">
+        {language || "text"}
       </span>
       <TooltipIconButton tooltip="Copy" onClick={onCopy}>
-        {!isCopied && <CopyIcon />}
-        {isCopied && <CheckIcon />}
+        {!isCopied && <CopyIcon className="size-3" />}
+        {isCopied && <CheckIcon className="size-3 text-emerald-400" />}
       </TooltipIconButton>
     </div>
   );
@@ -156,18 +176,20 @@ const defaultComponents = memoizeMarkdownComponents({
   ul: ({ className, ...props }) => (
     <ul
       className={cn(
-        "aui-md-ul my-2 ms-4 list-disc marker:text-muted-foreground [&>li]:mt-1",
+        "aui-md-ul list-disc marker:text-muted-foreground [&>li]:mt-1",
         className,
       )}
+      style={{ paddingLeft: "1.25rem", marginBlock: "0.5em" }}
       {...props}
     />
   ),
   ol: ({ className, ...props }) => (
     <ol
       className={cn(
-        "aui-md-ol my-2 ms-4 list-decimal marker:text-muted-foreground [&>li]:mt-1",
+        "aui-md-ol list-decimal marker:text-muted-foreground [&>li]:mt-1",
         className,
       )}
+      style={{ paddingLeft: "1.25rem", marginBlock: "0.5em" }}
       {...props}
     />
   ),
@@ -222,15 +244,27 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
-  pre: ({ className, ...props }) => (
-    <pre
-      className={cn(
-        "aui-md-pre overflow-x-auto rounded-t-none rounded-b-lg border border-border/50 border-t-0 bg-muted/30 p-3 text-xs leading-relaxed",
-        className,
-      )}
-      {...props}
-    />
-  ),
+  pre: ({ className, children, ...props }) => {
+    // Detect unclosed backtick blocks (missing closing ```).
+    // Heuristic: if the raw code starts with ``` or has no trailing fence, flag it.
+    const codeContent = extractCodeContent(children);
+    const isUnclosed = codeContent ? detectUnclosedBlock(codeContent) : false;
+    return (
+      <div className="overflow-x-auto max-w-full my-2">
+        <pre
+          className={cn(
+            "aui-md-pre overflow-x-auto rounded-t-none rounded-b-lg border border-zinc-700/50 border-t-0 bg-zinc-950 p-3 text-xs leading-relaxed",
+            isUnclosed && "border-yellow-500/30 border-l-yellow-500/30 border-l-2",
+            className,
+          )}
+          style={{ fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace" }}
+          {...props}
+        >
+          {children}
+        </pre>
+      </div>
+    );
+  },
   code: function Code({ className, ...props }) {
     const isCodeBlock = useIsMarkdownCodeBlock();
     return (
@@ -246,3 +280,5 @@ const defaultComponents = memoizeMarkdownComponents({
   },
   CodeHeader,
 });
+
+export { defaultComponents };

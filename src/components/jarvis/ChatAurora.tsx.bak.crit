@@ -1,0 +1,65 @@
+"use client";
+
+import React from "react";
+import { useAuiState } from "@assistant-ui/react";
+import { useReducedMotion } from "motion/react";
+
+/**
+ * ChatAurora — Northern Lights ambient backdrop (v3 vibrant).
+ * Bound to thread.isRunning. When streaming, 3 saturated mesh blobs pulsate
+ * vibrantly. When idle, dim ambient glow only.
+ *
+ * Performance:
+ * - GPU-accelerated transforms only (translate/scale/opacity — no layout thrash)
+ * - Animation paused via CSS class when !animate (zero CPU when idle)
+ * - aria-live region for screen readers
+ */
+export const ChatAurora: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isRunning = useAuiState((s) => s.thread.isRunning);
+  const reducedMotion = useReducedMotion();
+  const animate = isRunning && !reducedMotion;
+
+  return (
+    <>
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {isRunning ? "Agent is thinking and processing your request." : ""}
+      </div>
+      <div className="relative w-full h-full overflow-hidden">
+        {/* Aurora mesh — 3 saturated blobs, no mix-blend, high opacity when running */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-0 transition-opacity duration-700 ease-out will-change-[opacity] ${
+            animate ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <div
+            className={`absolute -top-[15%] -left-[10%] w-[700px] h-[700px] rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 blur-[100px] will-change-transform ${
+              animate ? "animate-aurora-shift-1" : ""
+            }`}
+          />
+          <div
+            className={`absolute -bottom-[15%] -right-[5%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-fuchsia-500 via-violet-500 to-cyan-500 blur-[90px] will-change-transform ${
+              animate ? "animate-aurora-shift-2" : ""
+            }`}
+          />
+          <div
+            className={`absolute top-[30%] left-[30%] w-[500px] h-[500px] rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-500 blur-[80px] will-change-transform ${
+              animate ? "animate-aurora-shift-3" : ""
+            }`}
+          />
+        </div>
+
+        {/* Idle ambient glow (always on, very subtle) */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.08]"
+        >
+          <div className="absolute top-1/2 left-1/2 w-[800px] h-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-indigo-600 to-purple-700 blur-[150px]" />
+        </div>
+
+        {/* Content wrapper */}
+        <div className="relative z-10 w-full h-full">{children}</div>
+      </div>
+    </>
+  );
+};

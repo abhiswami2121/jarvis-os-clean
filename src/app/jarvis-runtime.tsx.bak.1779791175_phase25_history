@@ -1,0 +1,197 @@
+"use client";
+
+import React from "react";
+import { useLocalRuntime, type ChatModelAdapter, AssistantRuntimeProvider } from "@assistant-ui/react";
+import { toast } from "sonner";
+
+const LS_MODEL = "jarvis-os:model:v1";
+const LS_SESSION = "jarvis-os:session:v1";
+const LS_CID = "jarvis-os:cid:v1";  // stable conversation id per browser/tab
+
+function getOrCreateCid(): string {
+  if (typeof window === "undefined") return "";
+
+  // Prefer URL param when on /chat/[id] so switching conversations works
+  const match = window.location.pathname.match(/^\/chat\/([^/]+)/);
+  if (match) {
+    const urlCid = decodeURIComponent(match[1]);
+    sessionStorage.setItem(LS_CID, urlCid);
+    return urlCid;
+  }
+
+  let cid = sessionStorage.getItem(LS_CID);
+  if (!cid) {
+    cid = `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    sessionStorage.setItem(LS_CID, cid);
+  }
+  return cid;
+}
+
+export function setConversationId(cid: string) {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(LS_CID, cid);
+}
+
+export function resetConversation() {
+  if (typeof window !== "undefined") sessionStorage.removeItem(LS_CID);
+}
+
+function loadModel(): string {
+  if (typeof window === "undefined") return "deepseek-v4-pro";
+  return localStorage.getItem(LS_MODEL) || "deepseek-v4-pro";
+}
+
+async function consumeSse(reader: ReadableStreamDefaultReader<Uint8Array>, onEvent: (name: string, data: any) => void) {
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop() || "";
+    for (const part of parts) {
+      if (!part.trim() || part.startsWith(":")) continue;
+      const lines = part.split("\n");
+      let evName = "message";
+      let dataLine = "";
+      for (const line of lines) {
+        if (line.startsWith("event:")) evName = line.slice(6).trim();
+        else if (line.startsWith("data:")) dataLine = line.slice(5).trim();
+      }
+      if (!dataLine) continue;
+      try { onEvent(evName, JSON.parse(dataLine)); } catch { /* ignore */ }
+    }
+  }
+}
+
+function flattenMessages(messages: any[]) {
+  return messages.map((m) => {
+    let text = "";
+    if (typeof m.content === "string") text = m.content;
+    else if (Array.isArray(m.content)) {
+      for (const part of m.content) {
+        if (part?.type === "text" && part.text) text += part.text;
+      }
+    }
+    return { role: m.role, content: text };
+  });
+}
+
+const JarvisAdapter: ChatModelAdapter = {
+  async *run({ messages, abortSignal }) {
+    const model = loadModel();
+    const res = await fetch("/api/agent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: flattenMessages(messages as any), profile: model, conversation_id: getOrCreateCid() }),
+      signal: abortSignal,
+    });
+
+    if (!res.ok) {
+      toast.error(`Jarvis unreachable: HTTP ${res.status}`, { description: "Check VPS connection or try again" });
+      yield { content: [{ type: "text", text: `⚠ Connection failed (HTTP ${res.status}). Retry in a moment.` }] };
+      return;
+    }
+    if (!res.body) {
+      toast.error("No response stream", { description: "Jarvis returned an empty body" });
+      yield { content: [{ type: "text", text: "⚠ No response stream from VPS" }] };
+      return;
+    }
+
+    let activeSid: string | null = null;
+    const cancelOnAbort = () => {
+      if (activeSid) {
+        fetch(`/api/agent?sid=${encodeURIComponent(activeSid)}`, { method: "DELETE" }).catch(() => {});
+      }
+    };
+    if (abortSignal) {
+      if (abortSignal.aborted) cancelOnAbort();
+      else abortSignal.addEventListener("abort", cancelOnAbort, { once: true });
+    }
+    const reader = res.body.getReader();
+    let accumulatedText = "";
+    let reasoningText = "";
+    const toolCalls: any[] = [];
+    let sessionId: string | null = null;
+    let lastYield = 0;
+
+    const buildContent = (): any[] => {
+      const content: any[] = [];
+      if (reasoningText) content.push({ type: "reasoning", text: reasoningText });
+      for (const tc of toolCalls) content.push(tc);
+      if (accumulatedText) content.push({ type: "text", text: accumulatedText });
+      if (content.length === 0) content.push({ type: "text", text: "" });
+      return content;
+    };
+
+    const events: Array<{ name: string; data: any }> = [];
+    let consumerDone = false;
+    consumeSse(reader, (name, data) => events.push({ name, data }))
+      .catch(() => {})
+      .finally(() => { consumerDone = true; });
+
+    while (!consumerDone || events.length > 0) {
+      if (events.length === 0) {
+        await new Promise(r => setTimeout(r, 25));
+        continue;
+      }
+      const ev = events.shift()!;
+      const { name, data } = ev;
+      const type = data.type || name;
+
+      if (type === "session" && data.session_id) {
+        sessionId = String(data.session_id);
+        activeSid = sessionId;
+        if (typeof window !== "undefined") localStorage.setItem(LS_SESSION, sessionId);
+      } else if (type === "system" && data.session_id) {
+        sessionId = data.session_id;
+        activeSid = sessionId;
+        if (typeof window !== "undefined") localStorage.setItem(LS_SESSION, sessionId!);
+      } else if (type === "text") {
+        accumulatedText += data.text || "";
+      } else if (type === "reasoning" || type === "thinking") {
+        reasoningText += data.text || "";
+      } else if (type === "tool_use" || type === "tool_call") {
+        toolCalls.push({
+          type: "tool-call",
+          toolCallId: data.id || `t${toolCalls.length}`,
+          toolName: data.name || "tool",
+          args: data.input || data.args || {},
+          status: { type: "running" },
+        });
+      } else if (type === "tool_result") {
+        const tc = toolCalls.find((t) => t.toolCallId === data.id);
+        if (tc) {
+          tc.result = data.output || data.content || "";
+          tc.status = { type: data.is_error ? "incomplete" : "complete" };
+        }
+      } else if (type === "error") {
+        accumulatedText += `\n\n⚠ Error: ${data.error || "unknown"}`;
+      } else if (type === "done") {
+        if (typeof window !== "undefined") localStorage.removeItem(LS_SESSION);
+      }
+
+      const now = Date.now();
+      if (now - lastYield > 50) {
+        yield { content: buildContent() };
+        lastYield = now;
+      }
+    }
+
+    yield { content: buildContent() };
+  },
+};
+
+export function JarvisRuntimeProvider({ children, conversationId }: { children: React.ReactNode; conversationId?: string }) {
+  // Seed sessionStorage with URL-provided conversationId so the adapter picks it up on first POST
+  React.useEffect(() => {
+    if (conversationId && typeof window !== "undefined") {
+      sessionStorage.setItem(LS_CID, conversationId);
+    }
+  }, [conversationId]);
+  const runtime = useLocalRuntime(JarvisAdapter);
+  return <AssistantRuntimeProvider runtime={runtime}>{children}</AssistantRuntimeProvider>;
+}
+
+export { LS_MODEL };

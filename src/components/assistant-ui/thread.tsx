@@ -432,69 +432,64 @@ const AssistantMessage: FC = () => {
             "shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_4px_24px_-12px_rgba(16,185,129,0.08)]",
           )}>
             <div className="px-1 py-0.5"></div>
-          <MessagePrimitive.GroupedParts
-            groupBy={(part) => {
-              if (part.type === "reasoning")
-                return ["group-chainOfThought", "group-reasoning"];
-              if (part.type === "tool-call") {
-                if (getMcpAppFromToolPart(part)) return null;
-                return ["group-chainOfThought", "group-tool"];
-              }
-              return null;
-            }}
-          >
-            {({ part, children }) => {
-              switch (part.type) {
-                case "group-chainOfThought":
-                  return <div data-slot="aui_chain-of-thought">{children}</div>;
-                case "group-reasoning": {
-                  const running = part.status.type === "running";
-                  return (
-                    <JarvisReasoningGroup isStreaming={running}>
-                      {children}
-                    </JarvisReasoningGroup>
-                  );
+          <MessagePrimitive.Unstable_PartsGrouped
+            groupingFunction={(parts) => {
+              const groups: { groupKey: string | undefined; indices: number[] }[] = [];
+              let run: { key: string; indices: number[] } | null = null;
+              const flush = () => {
+                if (run && run.indices.length) {
+                  groups.push({ groupKey: run.key, indices: run.indices });
                 }
-                case "group-tool":
+                run = null;
+              };
+              parts.forEach((part: any, i: number) => {
+                let key: string | null = null;
+                if (part.type === "reasoning") key = "reasoning";
+                else if (part.type === "tool-call" && !getMcpAppFromToolPart(part))
+                  key = "tool";
+                if (key) {
+                  if (run && run.key === key) run.indices.push(i);
+                  else {
+                    flush();
+                    run = { key, indices: [i] };
+                  }
+                } else {
+                  flush();
+                  groups.push({ groupKey: undefined, indices: [i] });
+                }
+              });
+              flush();
+              return groups;
+            }}
+            components={{
+              Group: ({ groupKey, indices, children }: any) => {
+                if (groupKey === "reasoning") {
                   return (
-                    <ToolGroupRoot>
-                      <ToolGroupTrigger
-                        count={part.indices.length}
-                        active={part.status.type === "running"}
-                      />
-                      <ToolGroupContent>{children}</ToolGroupContent>
-                    </ToolGroupRoot>
-                  );
-                case "text":
-                  return <JarvisText />;
-                case "reasoning":
-                  return <JarvisReasoning {...part} />;
-                case "tool-call":
-                  // Aurora fiber tool bubble — emerald-to-purple gradient accent
-                  return part.toolUI ?? (
-                    <div className={cn(
-                      "inline-flex items-center gap-2 px-3 py-2 rounded-xl",
-                      "text-xs text-zinc-200 font-medium",
-                      "w-fit max-w-[90%] my-1 animate-fade-in",
-                      // Aurora glass morphism
-                      "bg-gradient-to-r from-violet-500/[0.06] via-emerald-500/[0.04] to-violet-500/[0.06]",
-                      "backdrop-blur-md",
-                      "border border-white/[0.08]",
-                      "shadow-[0_0_20px_-6px_rgba(139,92,246,0.1)]",
-                    )}>
-                      <span className={cn(
-                        "h-2 w-2 rounded-full",
-                        "bg-gradient-to-br from-emerald-400 to-violet-500",
-                        "animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]"
-                      )} />
-                      <span className="font-mono text-zinc-300">{(part as any).toolName ?? "Executing skill"}…</span>
+                    <div data-slot="aui_chain-of-thought">
+                      <JarvisReasoningGroup isStreaming={false}>
+                        {children}
+                      </JarvisReasoningGroup>
                     </div>
                   );
-                default:
-                  return null;
-              }
+                }
+                if (groupKey === "tool") {
+                  return (
+                    <div data-slot="aui_chain-of-thought">
+                      <ToolGroupRoot>
+                        <ToolGroupTrigger count={indices.length} active={false} />
+                        <ToolGroupContent>{children}</ToolGroupContent>
+                      </ToolGroupRoot>
+                    </div>
+                  );
+                }
+                return <>{children}</>;
+              },
+              Text: (props: any) => <JarvisText {...props} />,
+              Reasoning: (props: any) => <JarvisReasoning {...props} />,
+              ToolCall: (props: any) =>
+                props.toolUI ?? <JarvisToolCall {...(props as any)} />,
             }}
-          </MessagePrimitive.GroupedParts>
+          />
           <MessageError />
           <div className="px-1 py-0.5"></div>
           </div>{/* end aurora glass container */}

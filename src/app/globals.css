@@ -311,11 +311,13 @@
   overflow-wrap: anywhere;
 }
 
-/* Stable reasoning container — prevents layout jitter during streaming */
+/* Stable reasoning container — prevents layout jitter during streaming
+   FIX (May 28): Removed content-visibility:auto and contain:style+paint.
+   content-visibility:auto caches the paint and prevents browser repaints
+   during React streaming updates. Only contain:layout is needed for jitter. */
 .reasoning-text-container {
   position: relative;
-  contain: strict;
-  content-visibility: auto;
+  contain: layout;
 }
 
 /* Smooth text append during streaming — only animate opacity, not layout */

@@ -1,0 +1,168 @@
+import { NextRequest } from "next/server";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
+export const dynamic = "force-dynamic";
+
+const VPS_URL = process.env.JARVIS_VPS_URL || "http://187.127.250.171:8102";
+const TOKEN = process.env.DIAGNOSTICS_API_KEY || "NL2026061471";
+const IDLE_TIMEOUT_MS = 90_000; // 90s of no events = force close
+
+function sse(event: string, data: any): Uint8Array {
+  return new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+function classifyIntent(text: string): { tier: "trivial" | "normal" | "deep"; maxTurns: number } {
+  const t = (text || "").toLowerCase().trim();
+  if (/^(hi|hello|hey|yo|sup|test|testing|thanks|thank you|ok|okay|cool|nice|gg)\b/.test(t) || t.length < 15) {
+    return { tier: "trivial", maxTurns: 2 };
+  }
+  if (/(audit|analyze|comprehensive|full report|investigate|deep dive|reconcile|sweep|every|all clients)/.test(t)) {
+    return { tier: "deep", maxTurns: 30 };
+  }
+  return { tier: "normal", maxTurns: 8 };
+}
+
+async function cancelVpsSession(sid: string): Promise<void> {
+  if (!sid) return;
+  try {
+    await fetch(`${VPS_URL}/v1/sessions/${sid}/cancel`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${TOKEN}` },
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch (_) { /* best effort */ }
+}
+
+export async function DELETE(req: NextRequest) {
+  const url = new URL(req.url);
+  const sid = url.searchParams.get("sid") || "";
+  if (!sid) return new Response(JSON.stringify({ error: "sid required" }), { status: 400 });
+  await cancelVpsSession(sid);
+  return new Response(JSON.stringify({ ok: true, cancelled: sid }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function POST(req: NextRequest) {
+  const body: any = await req.json().catch(() => ({}));
+  const messages: any[] = body.messages || [];
+  const profile: string = body.profile || "kimi-k2.6";
+  const conversationId: string = body.conversation_id || body.conversationId || "";  // optional persistence handle
+  const userEmail: string = body.user_email || "aswa0617@gmail.com";
+
+  const lastUser = [...messages].reverse().find((m: any) => m.role === "user");
+  let goalText = "";
+  if (lastUser && lastUser.content) {
+    if (typeof lastUser.content === "string") goalText = lastUser.content;
+    else if (Array.isArray(lastUser.content)) {
+      goalText = lastUser.content.filter((p: any) => p.type === "text").map((p: any) => p.text).join("\n");
+    }
+  }
+  if (!goalText) goalText = "Hello";
+
+  const intent = classifyIntent(goalText);
+
+  // VERSAILLES FIX: do NOT stuff prior conversation into the goal string.
+  // The VPS persists conversation state via conversation_id (SQLite chat_store).
+  // The agent loads its own context from the persisted message log per session.
+  // This prevents the "Prior conversation: USER:... A:..." echo pattern in every turn.
+
+  // CONTEXT REPAIR: forward last 10 messages to VPS so the agent has
+  // immediate context even if its SQLite-based conversation loading is slow/flaky.
+  // The conversation_id still serves as the primary persistence key.
+  const recentMessages = messages.slice(-10);
+
+  let activeSid = "";
+  let lastEventAt = Date.now();
+  let idleWatchdog: ReturnType<typeof setInterval> | null = null;
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      // Watchdog: if 90s of silence, cancel the VPS session and close stream
+      idleWatchdog = setInterval(async () => {
+        if (Date.now() - lastEventAt > IDLE_TIMEOUT_MS) {
+          try { controller.enqueue(sse("error", { error: `Idle timeout after ${IDLE_TIMEOUT_MS/1000}s — session cancelled` })); } catch (_) {}
+          if (activeSid) await cancelVpsSession(activeSid);
+          if (idleWatchdog) { clearInterval(idleWatchdog); idleWatchdog = null; }
+          try { controller.close(); } catch (_) {}
+        }
+      }, 5000);
+
+      // If client disconnects (closes tab, hits Stop), cancel VPS session
+      req.signal.addEventListener("abort", async () => {
+        if (activeSid) await cancelVpsSession(activeSid);
+        if (idleWatchdog) { clearInterval(idleWatchdog); idleWatchdog = null; }
+        try { controller.close(); } catch (_) {}
+      });
+
+      try {
+        controller.enqueue(sse("system", { type: "system", subtype: "connecting" }));
+        controller.enqueue(sse("system", { type: "system", subtype: "intent", tier: intent.tier, max_turns: intent.maxTurns }));
+
+        const createRes = await fetch(`${VPS_URL}/v1/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` },
+          body: JSON.stringify({ goal: goalText, profile, max_turns: intent.maxTurns, conversation_id: conversationId || undefined, user_email: userEmail, recent_messages: recentMessages }),
+        });
+        if (!createRes.ok) {
+          controller.enqueue(sse("error", { error: `Session create failed: ${createRes.status}` }));
+          controller.close();
+          return;
+        }
+
+        const sessionData: any = await createRes.json();
+        const sid = sessionData.session_id;
+        if (!sid) {
+          controller.enqueue(sse("error", { error: "No session_id returned" }));
+          controller.close();
+          return;
+        }
+        activeSid = sid;
+        lastEventAt = Date.now();
+
+        // Tell client the session id so it can use the Stop button
+        controller.enqueue(sse("session", { type: "session", session_id: sid }));
+        // Tell client which conversation this belongs to (for URL routing + persistence)
+        controller.enqueue(sse("conversation", { type: "conversation", conversation_id: sessionData.conversation_id || conversationId || sid }));
+
+        const streamRes = await fetch(`${VPS_URL}/v1/sessions/${sid}/stream`, {
+          headers: { "Authorization": `Bearer ${TOKEN}` },
+          signal: req.signal,
+        });
+        if (!streamRes.ok || !streamRes.body) {
+          controller.enqueue(sse("error", { error: `Stream failed: ${streamRes.status}` }));
+          controller.close();
+          return;
+        }
+
+        const reader = streamRes.body.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          lastEventAt = Date.now();
+          controller.enqueue(value);
+        }
+
+        controller.enqueue(sse("done", { type: "done", status: "complete" }));
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        try { controller.enqueue(sse("error", { error: msg })); } catch (_) {}
+      } finally {
+        if (idleWatchdog) { clearInterval(idleWatchdog); idleWatchdog = null; }
+        try { controller.close(); } catch (_) {}
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+      "Connection": "keep-alive",
+    },
+  });
+}

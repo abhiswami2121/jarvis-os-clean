@@ -1,0 +1,199 @@
+"use client";
+
+import React, { useState } from "react";
+import { motion } from "motion/react";
+import {
+  Brain,
+  ChevronDown,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Wrench,
+} from "lucide-react";
+import {
+  type ReasoningMessagePartComponent,
+  type ToolCallMessagePartComponent,
+} from "@assistant-ui/react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
+
+/* ==========================================================
+   REASONING — minimal pill row, inline w/ tool strip
+   ========================================================== */
+export function JarvisReasoningView({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 2 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18 }}
+    >
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger className="flex items-center gap-1.5 py-0.5 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors">
+          <Brain className="size-3" />
+          <span className="italic">Reasoning</span>
+          <ChevronDown
+            className={cn(
+              "size-3 transition-transform duration-200",
+              open ? "rotate-0" : "-rotate-90"
+            )}
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="mt-1 rounded-md bg-zinc-900/50 border border-zinc-800/50 px-3 py-2 text-xs text-zinc-400 italic leading-relaxed whitespace-pre-wrap">
+            {text}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </motion.div>
+  );
+}
+export const JarvisReasoning = JarvisReasoningView as unknown as ReasoningMessagePartComponent;
+
+/* ==========================================================
+   TOOL CALL — COMPACT inline card (no longer fat)
+   - Title row shows: icon + name + arg summary + status badge
+   - Collapsed by default unless running
+   - Auto-collapses when done
+   - Uses Huashu palette: emerald=done, amber=running, red=err, sky=action
+   ========================================================== */
+
+type SimpleStatus = "running" | "complete" | "incomplete" | "requires-action";
+
+const statusMeta: Record<SimpleStatus, { icon: React.ElementType; color: string; ring: string; label: string }> = {
+  running:   { icon: Loader2,      color: "text-amber-400",   ring: "ring-amber-500/30 bg-amber-500/[0.06]",   label: "Running" },
+  complete:  { icon: CheckCircle2, color: "text-emerald-400", ring: "ring-emerald-500/25 bg-emerald-500/[0.05]", label: "Done" },
+  incomplete:{ icon: XCircle,      color: "text-red-400",     ring: "ring-red-500/30 bg-red-500/[0.06]",     label: "Error" },
+  "requires-action": { icon: AlertCircle, color: "text-sky-400", ring: "ring-sky-500/30 bg-sky-500/[0.06]", label: "Action" },
+};
+
+function summarizeArgs(args: any, max = 50): string {
+  if (!args) return "";
+  if (typeof args === "string") return args.slice(0, max);
+  try {
+    const keys = Object.keys(args);
+    if (keys.length === 0) return "";
+    // Show first 2 key:value pairs compactly
+    const pairs = keys.slice(0, 2).map((k) => {
+      const v = args[k];
+      const vStr = typeof v === "string" ? `"${v.slice(0, 20)}"` : JSON.stringify(v).slice(0, 25);
+      return `${k}=${vStr}`;
+    });
+    let s = pairs.join(" ");
+    if (keys.length > 2) s += ` +${keys.length - 2}`;
+    return s.length > max ? s.slice(0, max - 1) + "…" : s;
+  } catch {
+    return "";
+  }
+}
+
+export function JarvisToolCallView({
+  toolName,
+  args,
+  argsText,
+  result,
+  status,
+}: {
+  toolName: string;
+  args?: Record<string, any>;
+  argsText?: string;
+  result?: any;
+  status: { type: SimpleStatus } | SimpleStatus;
+}) {
+  const sType: SimpleStatus =
+    typeof status === "string" ? status : status?.type ?? "complete";
+  const meta = statusMeta[sType];
+  const Icon = meta.icon;
+  const isRunning = sType === "running";
+  // Open by default ONLY while running (so user sees args). Auto-collapses on done.
+  const [open, setOpen] = useState(isRunning);
+  React.useEffect(() => {
+    if (!isRunning) setOpen(false);
+  }, [isRunning]);
+
+  const argSummary = summarizeArgs(args);
+  const cleanName = toolName.replace(/^mcp__base44_tools__/, "").replace(/^mcp__/, "");
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 3 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className={cn(
+        "rounded-lg ring-1 transition-all",
+        meta.ring
+      )}
+    >
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-white/[0.02] transition-colors rounded-lg">
+          <Icon className={cn("size-3.5 flex-shrink-0", meta.color, isRunning && "animate-spin")} />
+          <Wrench className="size-3 text-zinc-500 flex-shrink-0" />
+          <span className="text-xs font-mono text-zinc-200 truncate">{cleanName}</span>
+          {argSummary && (
+            <span className="text-[10px] font-mono text-zinc-500 truncate flex-1">
+              {argSummary}
+            </span>
+          )}
+          <span className={cn("text-[10px] uppercase tracking-wider flex-shrink-0", meta.color)}>
+            {meta.label}
+          </span>
+          <ChevronDown
+            className={cn(
+              "size-3 text-zinc-500 transition-transform duration-200 flex-shrink-0",
+              open ? "rotate-0" : "-rotate-90"
+            )}
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="px-2.5 pb-2 space-y-1.5">
+            {(args || argsText) && (
+              <div>
+                <div className="text-[9px] uppercase tracking-wider text-zinc-600 mb-0.5">args</div>
+                <pre className="text-[10px] font-mono text-zinc-400 bg-zinc-900/50 rounded p-2 overflow-x-auto max-h-32 leading-relaxed">
+{JSON.stringify(args ?? argsText, null, 2)}
+                </pre>
+              </div>
+            )}
+            {result !== undefined && result !== null && (
+              <div>
+                <div className="text-[9px] uppercase tracking-wider text-zinc-600 mb-0.5">result</div>
+                <pre className="text-[10px] font-mono text-zinc-400 bg-zinc-900/50 rounded p-2 overflow-x-auto max-h-40 leading-relaxed whitespace-pre-wrap">
+{typeof result === "string" ? result.slice(0, 1500) : JSON.stringify(result, null, 2).slice(0, 1500)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </motion.div>
+  );
+}
+export const JarvisToolCall = JarvisToolCallView as unknown as ToolCallMessagePartComponent;
+
+/* ==========================================================
+   GROUP — wraps a series of tool calls + reasoning in a compact strip
+   ========================================================== */
+export function JarvisToolStrip({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="my-2 space-y-1 border-l-2 border-zinc-800/50 pl-2.5">
+      {children}
+    </div>
+  );
+}
+
+
+/* ==========================================================
+   TEXT — wraps streamed text in a stable, motion-friendly div
+   Used by thread.tsx for assistant text parts
+   ========================================================== */
+import { TextMessagePartComponent } from "@assistant-ui/react";
+import { MarkdownText } from "@/components/assistant-ui/markdown-text";
+
+export const JarvisText: TextMessagePartComponent = ({ text }) => {
+  return <span className="whitespace-pre-wrap">{text}</span>;
+};

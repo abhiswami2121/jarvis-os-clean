@@ -1,0 +1,77 @@
+"use client";
+
+import { memo, useMemo, useRef, useEffect, useState } from "react";
+import { useAuiState } from "@assistant-ui/react";
+import { MarkdownTextPrimitive } from "@assistant-ui/react-markdown";
+import remarkGfm from "remark-gfm";
+import { defaultComponents } from "@/components/assistant-ui/markdown-text";
+import { ArtifactList } from "@/components/artifacts/ArtifactRouter";
+import { parseArtifacts } from "@/lib/artifacts/parser";
+import type { Artifact } from "@/lib/artifacts/types";
+
+// Module-level side-channel to pass artifacts from preprocess to component
+let _pendingArtifacts: Artifact[] = [];
+let _pendingCleanText = "";
+
+function preprocessFn(text: string): string {
+  const parsed = parseArtifacts(text);
+  _pendingArtifacts = parsed.artifacts;
+  _pendingCleanText = parsed.cleanText;
+  return parsed.cleanText;
+}
+
+/**
+ * ArtifactAwareText — wraps text message part rendering with artifact detection.
+ *
+ * For plain text (no artifact blocks): renders <MarkdownTextPrimitive /> (zero-overhead fast path).
+ * For text with artifact blocks: strips blocks via preprocess and renders artifacts below.
+ */
+const ArtifactAwareTextImpl = () => {
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+  const hasCheckedRef = useRef(false);
+
+  // Read the raw text from the current message part
+  const rawText = useAuiState((s) => {
+    if (s.part.type === "text" || s.part.type === "reasoning") {
+      return (s.part as { text: string }).text || "";
+    }
+    return "";
+  });
+
+  // Check if text contains artifact blocks (fast pre-check)
+  const hasBlocks = useMemo(() => {
+    return rawText.includes("[[ARTIFACT_START:") && rawText.includes("[[ARTIFACT_END]]");
+  }, [rawText]);
+
+  // After render, collect artifacts from the side-channel
+  useEffect(() => {
+    if (hasBlocks && _pendingArtifacts.length > 0) {
+      setArtifacts(_pendingArtifacts);
+      _pendingArtifacts = [];
+      hasCheckedRef.current = true;
+    } else if (!hasBlocks) {
+      setArtifacts([]);
+    }
+  }, [hasBlocks, rawText]);
+
+  // If text has artifact blocks, we use MarkdownTextPrimitive with preprocess
+  if (hasBlocks) {
+    return (
+      <div>
+        <MarkdownTextPrimitive
+          remarkPlugins={[remarkGfm]}
+          components={defaultComponents}
+          preprocess={preprocessFn}
+          className="aui-md"
+        />
+        {artifacts.length > 0 && <ArtifactList artifacts={artifacts} />}
+      </div>
+    );
+  }
+
+  // Fast path: no artifact blocks — render normally
+  return <MarkdownTextPrimitive remarkPlugins={[remarkGfm]} components={defaultComponents} className="aui-md" />;
+};
+
+export const ArtifactAwareText = memo(ArtifactAwareTextImpl);
+export default ArtifactAwareText;

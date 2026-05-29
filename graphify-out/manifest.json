@@ -1,0 +1,1746 @@
+{
+  "/home/hermes/cortex/MASTER-CATALOG.md": {
+    "mtime": 1779870372.7631202,
+    "hash": "7766b73249f809153a8e5419fbc65026"
+  },
+  "/home/hermes/cortex/router.md": {
+    "mtime": 1779869656.2649083,
+    "hash": "010c1edad9d876ae35deb2bca553a9dd"
+  },
+  "/home/hermes/cortex/BUSINESS_CONTEXT.md": {
+    "mtime": 1778891587.1943593,
+    "hash": "817c3eb17a5da01c8caf455acc15ecff"
+  },
+  "/home/hermes/cortex/CORTEX.md": {
+    "mtime": 1778199402.6396642,
+    "hash": "b0efbcdec7f3d4fefb62abb27eae3055"
+  },
+  "/home/hermes/cortex/domains/dev.md": {
+    "mtime": 1779908805.0788023,
+    "hash": "71780d530664f7877ea04b3653f6fbc8"
+  },
+  "/home/hermes/cortex/domains/comms.md": {
+    "mtime": 1779908805.0788023,
+    "hash": "6695b2685b2baf6cb54923e3a30cacf7"
+  },
+  "/home/hermes/cortex/domains/research.md": {
+    "mtime": 1779908805.0798023,
+    "hash": "924996ae3f908ecef2d992cc00ba7b5c"
+  },
+  "/home/hermes/cortex/domains/enrollment.md": {
+    "mtime": 1779908805.0788023,
+    "hash": "1d31cb3b88cdc8d8df1ddc8b4f7efad7"
+  },
+  "/home/hermes/cortex/domains/billing.md": {
+    "mtime": 1779908805.0788023,
+    "hash": "ca687afb86ef33852003c49d9188eabf"
+  },
+  "/home/hermes/cortex/domains/vps.md": {
+    "mtime": 1779908805.0798023,
+    "hash": "1ebfd1837da1920fae8bcd9f7b883a09"
+  },
+  "/home/hermes/cortex/domains/safety.md": {
+    "mtime": 1779908805.0798023,
+    "hash": "0dbf7f04b5988a5ad983b1311e8abd86"
+  },
+  "/home/hermes/cortex/research/ghl/AGENTS.md": {
+    "mtime": 1779846242.0833402,
+    "hash": "f295181fa4e60ce3130401ed8f460dbf"
+  },
+  "/home/hermes/cortex/research/ghl/log.md": {
+    "mtime": 1779846232.1373165,
+    "hash": "d23a6390815beb0ce00ba0658f35cb50"
+  },
+  "/home/hermes/cortex/research/ghl/raw/api-overview.md": {
+    "mtime": 1779845759.148968,
+    "hash": "82ce3db9f6bee5a605bf44591fc73108"
+  },
+  "/home/hermes/cortex/research/ghl/raw/webhooks-events.md": {
+    "mtime": 1779845769.1280026,
+    "hash": "7faa6e0bc4ef088ef943d9f30dc4e8cf"
+  },
+  "/home/hermes/cortex/research/ghl/compiled/conversations-api.mdx": {
+    "mtime": 1779845832.8422153,
+    "hash": "ba3958db94a02afe3d4f0c43eefbcafd"
+  },
+  "/home/hermes/cortex/research/ghl/compiled/contacts-api.mdx": {
+    "mtime": 1779845806.3111284,
+    "hash": "f52b16552790b1db202bdb1b307c5e9b"
+  },
+  "/home/hermes/cortex/research/ghl/compiled/api-overview.mdx": {
+    "mtime": 1779845785.7240593,
+    "hash": "533f4cd0629c6a096984f8aed69456bf"
+  },
+  "/home/hermes/cortex/research/ghl/compiled/workflows-automation.mdx": {
+    "mtime": 1779845876.1073525,
+    "hash": "a533a78458fcaa0ef25c88d4b130a344"
+  },
+  "/home/hermes/cortex/research/ghl/compiled/pipelines-opportunities.mdx": {
+    "mtime": 1779845854.1942837,
+    "hash": "75e331c4b98c75db965e737b93a29424"
+  },
+  "/home/hermes/cortex/research/ghl/compiled/webhooks-events.mdx": {
+    "mtime": 1779845895.2844117,
+    "hash": "2f4058fcbc0490ed714bd803f1a313df"
+  },
+  "/home/hermes/cortex/research/nmi/AGENTS.md": {
+    "mtime": 1779842250.9321458,
+    "hash": "ed5b762b731ef3c122e9284185a39754"
+  },
+  "/home/hermes/cortex/research/nmi/log.md": {
+    "mtime": 1779842240.6401343,
+    "hash": "21f5032bc41eeb0116e6518c60223676"
+  },
+  "/home/hermes/cortex/research/nmi/index.md": {
+    "mtime": 1779842223.3151152,
+    "hash": "f88eae55291e795af36b17af05657256"
+  },
+  "/home/hermes/cortex/research/nmi/raw/cof-flags.md": {
+    "mtime": 1779841846.622759,
+    "hash": "50632ce38d1a4689325ae0a50db820d9"
+  },
+  "/home/hermes/cortex/research/nmi/raw/integration-portal.md": {
+    "mtime": 1779841837.8407526,
+    "hash": "37720e89d75f6b800ecab4657e96c592"
+  },
+  "/home/hermes/cortex/research/nmi/raw/llms-index.md": {
+    "mtime": 1779841862.7587714,
+    "hash": "9111b465fde53ff2ff2ed0cb61c310e6"
+  },
+  "/home/hermes/cortex/research/nmi/raw/response-codes.md": {
+    "mtime": 1779841854.8577654,
+    "hash": "c713ce6322e624ec9be56e4d4e519911"
+  },
+  "/home/hermes/cortex/research/nmi/compiled/subscription-lifecycle.mdx": {
+    "mtime": 1779841941.3078358,
+    "hash": "f6bf2c16bd5ec0e656b8a19cd0def07d"
+  },
+  "/home/hermes/cortex/research/nmi/compiled/mit-cit-flows.mdx": {
+    "mtime": 1779841969.7058606,
+    "hash": "6a9b89f3ed7181416f86e1082373c5b7"
+  },
+  "/home/hermes/cortex/research/nmi/compiled/error-codes.mdx": {
+    "mtime": 1779841993.310882,
+    "hash": "3601b1940fbcce34f47a4db9ff5c5613"
+  },
+  "/home/hermes/cortex/research/nmi/compiled/velocity-limits.mdx": {
+    "mtime": 1779842017.5319045,
+    "hash": "7e9f78a31c8a5f00c866fa4ddf525271"
+  },
+  "/home/hermes/cortex/research/nmi/compiled/api-overview.mdx": {
+    "mtime": 1779841896.0157979,
+    "hash": "71c1f1983fceff0723fd0f203fcc4d2b"
+  },
+  "/home/hermes/cortex/research/nmi/compiled/vault-operations.mdx": {
+    "mtime": 1779841917.3508153,
+    "hash": "9166bbaa614da8316039b29460be9954"
+  },
+  "/home/hermes/cortex/research/slack/log.md": {
+    "mtime": 1779843584.0308042,
+    "hash": "115742a7e017a699af96a8b7cda58ed7"
+  },
+  "/home/hermes/cortex/research/slack/raw/canvases-markdown.md": {
+    "mtime": 1779843106.6472337,
+    "hash": "70719b6ba61762c0cfe8286aa05b6606"
+  },
+  "/home/hermes/cortex/research/slack/raw/reactions-add.md": {
+    "mtime": 1779843169.3163195,
+    "hash": "1bf0951094a89d1f310e52b04eb3a799"
+  },
+  "/home/hermes/cortex/research/slack/raw/chat-postMessage.md": {
+    "mtime": 1779843080.6121984,
+    "hash": "bda42d9487ece7498c9a9cf2f5e3a139"
+  },
+  "/home/hermes/cortex/research/slack/raw/canvases-access-set.md": {
+    "mtime": 1779843157.196303,
+    "hash": "b2e55b3c3bce4009e2a89aba97ddee31"
+  },
+  "/home/hermes/cortex/research/slack/raw/methods-overview.html": {
+    "mtime": 1779843064.7481768,
+    "hash": "1017cf9467f0febeb3fa60edadf9621c"
+  },
+  "/home/hermes/cortex/research/slack/raw/search-messages.md": {
+    "mtime": 1779843127.964263,
+    "hash": "0cc30d457a5f880498b111297625dcac"
+  },
+  "/home/hermes/cortex/research/slack/raw/conversations-list.md": {
+    "mtime": 1779843164.0963123,
+    "hash": "8f87c5970562593cdf3803b3f3407991"
+  },
+  "/home/hermes/cortex/research/slack/raw/scopes.md": {
+    "mtime": 1779843150.753294,
+    "hash": "fae7cb19e95a2147415e532b45775aca"
+  },
+  "/home/hermes/cortex/research/slack/raw/conversations-history.md": {
+    "mtime": 1779843116.9332478,
+    "hash": "2fc8d9f644f86530f146a39994241cea"
+  },
+  "/home/hermes/cortex/research/slack/raw/canvases-create.md": {
+    "mtime": 1779843093.0372152,
+    "hash": "31058cad5496220a099b17eb25f0db48"
+  },
+  "/home/hermes/cortex/research/slack/raw/files-upload.md": {
+    "mtime": 1779843137.3312757,
+    "hash": "1219275b63176fd9747c435024f33844"
+  },
+  "/home/hermes/cortex/research/slack/compiled/conversations-api.mdx": {
+    "mtime": 1779843262.9364479,
+    "hash": "aa078c69d3c174c412522a1f054b0693"
+  },
+  "/home/hermes/cortex/research/slack/compiled/canvas-restrictions.mdx": {
+    "mtime": 1779843229.610402,
+    "hash": "9ab2588364816d18cefeae287dd672c7"
+  },
+  "/home/hermes/cortex/research/slack/compiled/chat-api.mdx": {
+    "mtime": 1779843292.6224887,
+    "hash": "4ec22c4c1c7e593f091d834f93a6065b"
+  },
+  "/home/hermes/cortex/research/slack/compiled/file-canvas-upload.mdx": {
+    "mtime": 1779843324.1175323,
+    "hash": "24d22e4af09b5e47924a833f4f753ef9"
+  },
+  "/home/hermes/cortex/research/slack/compiled/api-overview.mdx": {
+    "mtime": 1779843201.6853638,
+    "hash": "1b1bc5abdeefb4c9be0857f59feebd8e"
+  },
+  "/home/hermes/cortex/research/vapi/AGENTS.md": {
+    "mtime": 1779846203.0322464,
+    "hash": "d894a3dd5d7b8839041d6044ba111b82"
+  },
+  "/home/hermes/cortex/research/vapi/log.md": {
+    "mtime": 1779846192.0712197,
+    "hash": "7880e9d7a8fa6335e3e7cf582285a50f"
+  },
+  "/home/hermes/cortex/research/vapi/raw/api-reference-overview.html": {
+    "mtime": 1779845562.0022044,
+    "hash": "e9dba84d65520c5d473c67bfa04c70e7"
+  },
+  "/home/hermes/cortex/research/vapi/raw/assistants-config.txt": {
+    "mtime": 1779845628.27348,
+    "hash": "bd22ec379b3da738f40bb5302467d46f"
+  },
+  "/home/hermes/cortex/research/vapi/raw/api-reference-overview.txt": {
+    "mtime": 1779845625.5814693,
+    "hash": "54e61077edd37d051167d1f4d76704d8"
+  },
+  "/home/hermes/cortex/research/vapi/raw/quickstart-introduction.txt": {
+    "mtime": 1779845627.5874772,
+    "hash": "ea940f3985567aadbb12ec1d18f8d03d"
+  },
+  "/home/hermes/cortex/research/vapi/raw/phone-numbers.txt": {
+    "mtime": 1779845626.1474714,
+    "hash": "76422d4e4fbd31ef88361f7dd35bd389"
+  },
+  "/home/hermes/cortex/research/vapi/raw/squads.txt": {
+    "mtime": 1779845627.525477,
+    "hash": "4ea2aa3831c441f8a5559a6ca0982a8f"
+  },
+  "/home/hermes/cortex/research/vapi/raw/tools.html": {
+    "mtime": 1779845583.4172957,
+    "hash": "cfeb868824b35f268c91fb7c55c4c52b"
+  },
+  "/home/hermes/cortex/research/vapi/raw/phone-numbers.html": {
+    "mtime": 1779845594.0323403,
+    "hash": "df201bb4e42dd4e407f12d1a181567fa"
+  },
+  "/home/hermes/cortex/research/vapi/raw/squads.html": {
+    "mtime": 1779845601.20237,
+    "hash": "8eabfbb26bf10526f8e2a433a8096a92"
+  },
+  "/home/hermes/cortex/research/vapi/raw/server-url.html": {
+    "mtime": 1779845569.2042353,
+    "hash": "d4e49a5c5232791d6b814716ceb518e5"
+  },
+  "/home/hermes/cortex/research/vapi/raw/quickstart-introduction.html": {
+    "mtime": 1779845560.2151966,
+    "hash": "ae163747df0ce3cfb6d63e750b530c19"
+  },
+  "/home/hermes/cortex/research/vapi/raw/assistants-config.html": {
+    "mtime": 1779845563.2502098,
+    "hash": "2e05f0fc4159681edb26ddab4915cd73"
+  },
+  "/home/hermes/cortex/research/vapi/raw/calls-lifecycle.html": {
+    "mtime": 1779845564.8282166,
+    "hash": "4d73c297f4307a933239c8a43a021948"
+  },
+  "/home/hermes/cortex/research/vapi/raw/calls-lifecycle.txt": {
+    "mtime": 1779845631.8944945,
+    "hash": "62dffac780f77993aacaec16bb307f9a"
+  },
+  "/home/hermes/cortex/research/vapi/raw/server-url.txt": {
+    "mtime": 1779845627.5354772,
+    "hash": "3ea8638510319946804a8363080a7521"
+  },
+  "/home/hermes/cortex/research/vapi/raw/tools.txt": {
+    "mtime": 1779845625.9664707,
+    "hash": "4da0b3574ef34bd25f3bc83ad8246936"
+  },
+  "/home/hermes/cortex/research/vapi/compiled/webhooks-server-url.mdx": {
+    "mtime": 1779845799.015104,
+    "hash": "ada0e626a22bda468668a2e39bc11eb0"
+  },
+  "/home/hermes/cortex/research/vapi/compiled/tools-function-calling.mdx": {
+    "mtime": 1779845825.340191,
+    "hash": "40a2a6c30e88f356a2ecc8c3b35a4039"
+  },
+  "/home/hermes/cortex/research/vapi/compiled/assistants-config.mdx": {
+    "mtime": 1779845737.771893,
+    "hash": "3a47ead1507fcaea69fb8a1138f20fc8"
+  },
+  "/home/hermes/cortex/research/vapi/compiled/calls-lifecycle.mdx": {
+    "mtime": 1779845763.9699848,
+    "hash": "62c28d8ded946eed51655b93d94972e8"
+  },
+  "/home/hermes/cortex/research/vapi/compiled/api-overview.mdx": {
+    "mtime": 1779845714.448809,
+    "hash": "a4bb087e04b12b40423568350060912e"
+  },
+  "/home/hermes/cortex/research/vapi/compiled/transcription-recording.mdx": {
+    "mtime": 1779845855.3882873,
+    "hash": "d529b52555bb14525f77089f48d73b04"
+  },
+  "/home/hermes/cortex/research/base44/AGENTS.md": {
+    "mtime": 1779844430.6246464,
+    "hash": "b42bb7143354762fed1c4a13d2b114ca"
+  },
+  "/home/hermes/cortex/research/base44/log.md": {
+    "mtime": 1779844424.257639,
+    "hash": "bdb2dbd432594f5cfaa0c88ecd5b232c"
+  },
+  "/home/hermes/cortex/research/base44/raw/llms-index.md": {
+    "mtime": 1779843973.6751378,
+    "hash": "e045bd6853ec67f4d1a02aef1156a41f"
+  },
+  "/home/hermes/cortex/research/base44/compiled/functions-runtime.mdx": {
+    "mtime": 1779844081.79725,
+    "hash": "27fc326e6a9f7850f465c741da4f6517"
+  },
+  "/home/hermes/cortex/research/base44/compiled/entity-system.mdx": {
+    "mtime": 1779844054.3642209,
+    "hash": "4d6d047dcc02d64b8b623481925c5c47"
+  },
+  "/home/hermes/cortex/research/base44/compiled/our-95-entities.mdx": {
+    "mtime": 1779844173.2333496,
+    "hash": "e04fb762a1ac4c3ded598312bb474caa"
+  },
+  "/home/hermes/cortex/research/base44/compiled/mcp-edit-pipeline.mdx": {
+    "mtime": 1779844111.0822816,
+    "hash": "e3c7cc601a6a48a7afb6e80b991e431a"
+  },
+  "/home/hermes/cortex/research/base44/compiled/api-overview.mdx": {
+    "mtime": 1779844015.5001805,
+    "hash": "7855c0febf2c61fff6b0e28d3660d554"
+  },
+  "/home/hermes/cortex/cortex/CORTEX.md": {
+    "mtime": 1779865206.6935751,
+    "hash": "b0efbcdec7f3d4fefb62abb27eae3055"
+  },
+  "/home/hermes/cortex/cortex/agents/hermes.md": {
+    "mtime": 1779865245.634643,
+    "hash": "8a8e5bac62d9a9bbb364c626048e7db3"
+  },
+  "/home/hermes/cortex/cortex/memory/operational-vision.md": {
+    "mtime": 1779908429.431014,
+    "hash": "a3bfc39136050f81f7a2843977d9e376"
+  },
+  "/home/hermes/cortex/cortex/prd/billing-intelligence.md": {
+    "mtime": 1779865238.4806306,
+    "hash": "ddf77cd60e77a7b0be8cf7c44ba0a43c"
+  },
+  "/home/hermes/cortex/cortex/skills/recovery-final-check.md": {
+    "mtime": 1779865215.2095902,
+    "hash": "dc4f0276ef587251b1cd131f42da802e"
+  },
+  "/home/hermes/cortex/cortex/skills/golden-mit-flow.md": {
+    "mtime": 1779865217.435594,
+    "hash": "8193dec11f3dcf79ef49db5db8b571cf"
+  },
+  "/home/hermes/cortex/cortex/skills/mit-protocol.md": {
+    "mtime": 1779886817.164505,
+    "hash": "577df0b0ea49abe2692669f641bbc7ca"
+  },
+  "/home/hermes/cortex/cortex/skills/sync360.md": {
+    "mtime": 1779908424.3320034,
+    "hash": "14155ef28277f5806fc3978430354bc3"
+  },
+  "/home/hermes/cortex/cortex/skills/cancel-guard.md": {
+    "mtime": 1779886818.714508,
+    "hash": "6712c4c1e5ad806bcf748c6582e694e6"
+  },
+  "/home/hermes/cortex/cortex/skills/billing-imperatives.md": {
+    "mtime": 1779865211.076583,
+    "hash": "478e89a531c418af2efde1e9fef8a1c4"
+  },
+  "/home/hermes/cortex/cortex/skills/integration-imperatives.md": {
+    "mtime": 1779886821.3625133,
+    "hash": "6b2619ae94115afe494547615da38d31"
+  },
+  "/home/hermes/cortex/specs/cockpit_phase_a.md": {
+    "mtime": 1779667960.8801987,
+    "hash": "a905a4fe34df1dcd3a8e7eca93aece08"
+  },
+  "/home/hermes/cortex/specs/MASTER-ALIGNMENT-PRD-v1.md": {
+    "mtime": 1779840750.074448,
+    "hash": "aea8d043c2f16a6feb58e0df45fc3a2b"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/edfa4c2ffe84-auto-report.md": {
+    "mtime": 1779836203.5205748,
+    "hash": "5fb43fc8061c75134097c21d9ca95738"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/f21e9ad4efeb-auto-report.md": {
+    "mtime": 1779795939.440539,
+    "hash": "fdf794f72995d167c459a6f8eb828afa"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/6a4092b6721f-auto-report.md": {
+    "mtime": 1779764132.0594358,
+    "hash": "76921aa8e7a5e3d79bb55b9291a0f51b"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/6155f193e356-auto-report.md": {
+    "mtime": 1779778921.8890853,
+    "hash": "65a79f5b90c19b96f192be2f5c37dd58"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/5ff51c440963-auto-report.md": {
+    "mtime": 1779766815.1880753,
+    "hash": "8480d312ed5edf3e8c7951dd9408ffd0"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/ec162cf84917-auto-report.md": {
+    "mtime": 1779766830.8030958,
+    "hash": "d6fe6d6ae512805ab2c3e98740953051"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/48c80c7f6f60-auto-report.md": {
+    "mtime": 1779763749.068627,
+    "hash": "47d9ace16c73639e98d8d7240e02bedd"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/ed02d278220c-auto-report.md": {
+    "mtime": 1779766760.411004,
+    "hash": "08c10ea1c2f7d156c02204e46e7a23e6"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/f8e4fff00c26-auto-report.md": {
+    "mtime": 1779789675.2423594,
+    "hash": "34382cd1432508e8d3112d27cbe28ddd"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/da82758c85f0-auto-report.md": {
+    "mtime": 1779762794.1989734,
+    "hash": "b88e34ec9eeb309fb11294a5a7ca4d3b"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/1b270cd5b219-auto-report.md": {
+    "mtime": 1779757320.5378926,
+    "hash": "71491831c42bb911fa75cafe4437b5d8"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/b0b60e60b1b6-auto-report.md": {
+    "mtime": 1779767015.6033442,
+    "hash": "213ff2a94694b03c1ec052fe6d4bca05"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/ae542d088b20-auto-report.md": {
+    "mtime": 1779789398.8249335,
+    "hash": "4242aa5654dfa6fabfe80ce5a8b438ee"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/d6b4d3d8a2ff-auto-report.md": {
+    "mtime": 1779769544.684506,
+    "hash": "c51dfc6902c9be1597843d05011eab27"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/4a267c70a900-auto-report.md": {
+    "mtime": 1779764202.853575,
+    "hash": "37b1ea45ccc270c83d8012bc14755043"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/b16ac4e940e1-auto-report.md": {
+    "mtime": 1779770201.429378,
+    "hash": "330b2e1c132da977105e96dcdab329cb"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/d2e4917ad2b3-auto-report.md": {
+    "mtime": 1779792006.3950713,
+    "hash": "eecef87c07145df1eaf61e8c9c00c095"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/243ee7d4b37c-auto-report.md": {
+    "mtime": 1779838444.9615176,
+    "hash": "a7fa879260d891c9b16ef80f71ae9c4d"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/cb584cc66599-auto-report.md": {
+    "mtime": 1779765969.9282064,
+    "hash": "27f0e15b52aca2342434e3880f1cde59"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/27cb2327c2be-auto-report.md": {
+    "mtime": 1779795905.2344737,
+    "hash": "c4f68a5334b6b05ea9553199f08013e9"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/d0f337ef4bb6-auto-report.md": {
+    "mtime": 1779770802.6867588,
+    "hash": "bec610bb1d96586407abbe7eac4438e0"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/4a80aac88597-auto-report.md": {
+    "mtime": 1779760390.8442187,
+    "hash": "a6a67650f634e3f6f0368b1a41dc5a6d"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/5b5edd851051-auto-report.md": {
+    "mtime": 1779763035.0473578,
+    "hash": "4d0ec2e3292531e217602ccc10ac815e"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/fabbb3da47d5-auto-report.md": {
+    "mtime": 1779767880.8683853,
+    "hash": "c91dad20e73e29f08b9b0775f6b6067c"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/87e112c76d66-auto-report.md": {
+    "mtime": 1779791705.1525862,
+    "hash": "cbc779ce45c64df92389b407cda6da42"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/a7a16cf33a43-auto-report.md": {
+    "mtime": 1779788507.5337415,
+    "hash": "62a171ed10909690c6e13ce5fa7be82b"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/4d7d295b1dd9-auto-report.md": {
+    "mtime": 1779761658.4442644,
+    "hash": "4c77d1e3d9ae249801804222c8eb2d3d"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/373c219ead0d-auto-report.md": {
+    "mtime": 1779791608.8854313,
+    "hash": "39b88a198aee73ae567395828e083c08"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/50688da2aee4-auto-report.md": {
+    "mtime": 1779770166.1663842,
+    "hash": "e8b5b4f16933f17102b2d425a37d16b8"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/caface607413-auto-report.md": {
+    "mtime": 1779761715.446341,
+    "hash": "5dcf747699405466738aee2178d4a45a"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/90ab3a1462a0-auto-report.md": {
+    "mtime": 1779836853.8616867,
+    "hash": "6ed952095fbfb8187f452e0147178424"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/9ccc77da3808-auto-report.md": {
+    "mtime": 1779791905.5669088,
+    "hash": "b9be065f089b45fdd15e3151f66c05eb"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/0a9b4ef42f6a-auto-report.md": {
+    "mtime": 1779791311.5689535,
+    "hash": "565707bc9900eb0b95efdb3d22df050c"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/7f6a2965490a-auto-report.md": {
+    "mtime": 1779771036.6490507,
+    "hash": "1c49959084ecc3f3cf7e22dbd9de0e6d"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/9c675258aaf3-auto-report.md": {
+    "mtime": 1779779652.2802172,
+    "hash": "3fa053ad04d932cf521ccc247d790d27"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/5d4827ae16b1-auto-report.md": {
+    "mtime": 1779756048.6722803,
+    "hash": "49bc75b726673bef7c89784e452c2c62"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/9d8d86ee42e8-auto-report.md": {
+    "mtime": 1779768180.328693,
+    "hash": "0d855b65481680baf673b6f1b9d5edc5"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/9b83e24cca6a-auto-report.md": {
+    "mtime": 1779797787.2026043,
+    "hash": "33e187c04cc19347b944af4ced042bc9"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/f305ceef3b92-auto-report.md": {
+    "mtime": 1779767641.6272335,
+    "hash": "52c1fb1551ead22e9a59c11ade6fe37f"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/c4feebeecfab-auto-report.md": {
+    "mtime": 1779832768.7551003,
+    "hash": "33f60f6f24ac448c7073f515ea528859"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/0d749addd00b-auto-report.md": {
+    "mtime": 1779765445.958817,
+    "hash": "45955b2f71ee74098236f60a7b1f3381"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/34b1b5785c24-auto-report.md": {
+    "mtime": 1779769578.0715847,
+    "hash": "2a068b33b5944fc9d229169f31d08f96"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/11233f380d6e-auto-report.md": {
+    "mtime": 1779784366.0625794,
+    "hash": "7ceb78a27b33ca918f5c653a124e2d1a"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/85463a5d0349-auto-report.md": {
+    "mtime": 1779789828.8966005,
+    "hash": "a25938b3cb4ffaf57d3fa16d548e3999"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/0b08f836db01-auto-report.md": {
+    "mtime": 1779791403.6881013,
+    "hash": "bb44779380f2057df3612cc0a0bc60f3"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/d9c6f5fcd9a9-auto-report.md": {
+    "mtime": 1779767774.580816,
+    "hash": "381ee636a7faa5aa3df3c9bd14bbf34d"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/2b6172295da9-auto-report.md": {
+    "mtime": 1779788488.0577216,
+    "hash": "18ccd1fdb71d7ace8a4f362ab6a7efd4"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/73eff159bd9c-auto-report.md": {
+    "mtime": 1779758040.48097,
+    "hash": "33ba85f9943458bf0bcaf66b19453a94"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/9e14c35eb4a9-auto-report.md": {
+    "mtime": 1779791786.5997174,
+    "hash": "c8cb4c228c01b601a0f828c82c8ac5ba"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/68d7ce2d802a-auto-report.md": {
+    "mtime": 1779789945.3107846,
+    "hash": "dd0a06f747e47e78f4ca72de09908e05"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/03944557e7a0-auto-report.md": {
+    "mtime": 1779835677.9386356,
+    "hash": "99e209d367599bb3d7972c3a30031ecc"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/9123e9d59fb5-auto-report.md": {
+    "mtime": 1779769101.9864328,
+    "hash": "5ac9a52cb317a54858a4d7be1c092c38"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/10189caef011-auto-report.md": {
+    "mtime": 1779770769.0327213,
+    "hash": "6e8b49c4ad953b43667b36e0fa0e77f5"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/c2675477b201-auto-report.md": {
+    "mtime": 1779796045.37474,
+    "hash": "01ddd086f54dae50c636d699c1c8f57c"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/26a2c597090b-auto-report.md": {
+    "mtime": 1779779263.0606155,
+    "hash": "77a37acb54117f9e95ad021bc8030b7c"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/d2ec6ab3ec49-auto-report.md": {
+    "mtime": 1779789914.085735,
+    "hash": "8b1a91bc3190444a18db91628521f500"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/dfcf46336b0e-auto-report.md": {
+    "mtime": 1779766945.3772488,
+    "hash": "fae43cf1b7dc92abd790caddcb916f80"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/12bee50d0c1f-auto-report.md": {
+    "mtime": 1779762507.3485203,
+    "hash": "4fdf87ebaa4f631e1c9177521f1562d0"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/0d1948cc08ab-auto-report.md": {
+    "mtime": 1779767256.8696804,
+    "hash": "97d85628972263d5bbd7e1889df1e611"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/dbf05a7d0364-auto-report.md": {
+    "mtime": 1779769632.246712,
+    "hash": "945fedfebdd74596adfe3c56e59f2231"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/3a2b2577124f-auto-report.md": {
+    "mtime": 1779771023.3270328,
+    "hash": "00886cac9a1d4891afe1301ceeedfe2f"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/534c0066ef88-auto-report.md": {
+    "mtime": 1779764241.133649,
+    "hash": "c81412f6d609a166fefd492c8b28803c"
+  },
+  "/home/hermes/cortex/audit/2026-05-26/fd0f6c46edf7-auto-report.md": {
+    "mtime": 1779791834.9647954,
+    "hash": "ae4fc2dbbfcec09ce7a5df912b2bc548"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/88fce8a169a4-auto-report.md": {
+    "mtime": 1779682062.3645155,
+    "hash": "9c5c351702fe373e2ab8dd0f7adcdf07"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/5d7913e74652-auto-report.md": {
+    "mtime": 1779735879.6723475,
+    "hash": "cd52586b11266f2a7e2396c9386e9e96"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/27a794f37e4e-auto-report.md": {
+    "mtime": 1779691512.2588956,
+    "hash": "4f88995cbbb7b44fa4149a7fe5b3caa6"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/df445fd78a71-auto-report.md": {
+    "mtime": 1779734551.4708517,
+    "hash": "793231b7339a47a9c1e7d6b3fc168dfc"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/dfcf7d975a9e-auto-report.md": {
+    "mtime": 1779681680.7991982,
+    "hash": "78266525f52762af1dec98edb320feb7"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/d7af8cdc56d6-auto-report.md": {
+    "mtime": 1779700103.2734723,
+    "hash": "0705928134f971f4ae6c5d4082474657"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/6406d93afd64-auto-report.md": {
+    "mtime": 1779695765.7604873,
+    "hash": "549b1fa8e36166baec83449e66a15c11"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/ac948f564401-auto-report.md": {
+    "mtime": 1779749016.7947485,
+    "hash": "13ed2fe082a8a0a39fd242ad7eedbcd0"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/1190a582c91c-auto-report.md": {
+    "mtime": 1779676992.555818,
+    "hash": "489565f73edb9faa0f9a6f09656c0bc4"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/665eac27171c-auto-report.md": {
+    "mtime": 1779681117.0042973,
+    "hash": "bf97f5324790eb8ec9ab7b78ed806c3b"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/5a1a180be9e9-auto-report.md": {
+    "mtime": 1779750856.1358688,
+    "hash": "33c8b0c12c8c1a120725b1afd4b33629"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/bb8e0d8b3a93-auto-report.md": {
+    "mtime": 1779700217.929631,
+    "hash": "3055379f04a5855278db184703a7b10e"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/73bdde3c23fa-auto-report.md": {
+    "mtime": 1779728373.208169,
+    "hash": "fb36da1b72a5af2c62cb0d6399ca2fd1"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/293b4c93cf8b-auto-report.md": {
+    "mtime": 1779689471.6974442,
+    "hash": "7f2ad603716b66e0051dffa467718952"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/603890c25247-auto-report.md": {
+    "mtime": 1779746952.2474396,
+    "hash": "ab4a312a2d51e5cc46ed8ce99f9d3207"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/3a0fa63f7c11-auto-report.md": {
+    "mtime": 1779729951.8743875,
+    "hash": "fc5a387cd912fe22170f9a1464bd2152"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/200085dce2c4-auto-report.md": {
+    "mtime": 1779679111.022576,
+    "hash": "29c79826d653cb80f9914780d03bb3cf"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/fd0c194a8296-auto-report.md": {
+    "mtime": 1779678640.8604524,
+    "hash": "11e3fbb5390386ed8713e864f973648c"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/262df0057591-auto-report.md": {
+    "mtime": 1779733758.823434,
+    "hash": "e2b981def52aa294209bfa8752a42fbd"
+  },
+  "/home/hermes/cortex/audit/2026-05-25/7edda9c2a829-auto-report.md": {
+    "mtime": 1779747569.5144615,
+    "hash": "f108b5101c07bd0065c2fadf6147f778"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/4a5e4c7a791f-auto-report.md": {
+    "mtime": 1779844538.0597758,
+    "hash": "94e260ab325d97354c2fa3f2d8ce1773"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/c49457eb3354-auto-report.md": {
+    "mtime": 1779864697.8386674,
+    "hash": "151e55520e7cfdcf023bc7bb66924fe1"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/57340dbb1fdf-auto-report.md": {
+    "mtime": 1779869788.1911564,
+    "hash": "e99a72afdcacc459a9962c4c917b7251"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/beca67c59032-auto-report.md": {
+    "mtime": 1779869831.4012372,
+    "hash": "1711672346bf0612228f18dc25c4cc83"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/4ff0ceb00f76-auto-report.md": {
+    "mtime": 1779869870.1433096,
+    "hash": "b0bedaca2cbf1a752269a24af2e7bf82"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/ce9a3214f287-auto-report.md": {
+    "mtime": 1779906301.2001777,
+    "hash": "36a2a1e9bc842dd76bcd8b8df3bc65bb"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/8774e3894c2f-auto-report.md": {
+    "mtime": 1779865817.8156278,
+    "hash": "4731bf77c62bd933829d243a91c1159a"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/f3c61f0ad1e0-auto-report.md": {
+    "mtime": 1779907560.8150542,
+    "hash": "c099755144d49b04f9dc3ba7617c19ec"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/74b6cb78d0d5-auto-report.md": {
+    "mtime": 1779865275.1056943,
+    "hash": "20f13cdecefa3fa3f60a03e4899c6cf0"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/7ba32e01a618-auto-report.md": {
+    "mtime": 1779869910.502385,
+    "hash": "9468b8d4d03fc68a69137594e40c917e"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/a51abc441c82-auto-report.md": {
+    "mtime": 1779848020.9908469,
+    "hash": "e7a273ffb6d6068fca62f7cb3a3a4093"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/04a3b08fe62f-auto-report.md": {
+    "mtime": 1779912837.486579,
+    "hash": "d692a82ae7a6a821f25a0acc30412a52"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/07846aa56b74-auto-report.md": {
+    "mtime": 1779862365.983807,
+    "hash": "bcee859deb713bf95313f01a45f51c8e"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/66d26ed65ed9-auto-report.md": {
+    "mtime": 1779912751.1644278,
+    "hash": "88c090957bdf63741952148983367918"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/cacaab69a8b4-auto-report.md": {
+    "mtime": 1779909746.1974018,
+    "hash": "8bb0ececbb2f436bba73f392341658d8"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/e849eb52ea76-auto-report.md": {
+    "mtime": 1779842354.6512647,
+    "hash": "8bbf25a851c1266d58d10eb735e10391"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/3dd31b24f6d0-auto-report.md": {
+    "mtime": 1779843656.0068548,
+    "hash": "0732808b58417420b88ac16ecca42470"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/e1b114f520d2-auto-report.md": {
+    "mtime": 1779846348.4075856,
+    "hash": "bcbfc521a76e1291900cb6d29a9c7862"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/13be6cee1fa5-auto-report.md": {
+    "mtime": 1779846323.0585284,
+    "hash": "7e122da3014dd46ee2464ebb63f35d58"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/f2830f573245-auto-report.md": {
+    "mtime": 1779906125.7178748,
+    "hash": "effe8211b5640ca37277fc92fd5f02ed"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/9df7ebdc3479-auto-report.md": {
+    "mtime": 1779864298.514903,
+    "hash": "696796ddd3c818735af83bb64fa15dc8"
+  },
+  "/home/hermes/cortex/audit/2026-05-27/a37bc1113acc-auto-report.md": {
+    "mtime": 1779840823.8135736,
+    "hash": "98c177cadaf4bd3b87be492daf227cb0"
+  },
+  "/home/hermes/cortex/compiled/SYSTEM_PROMPT.md": {
+    "mtime": 1779908805.0788023,
+    "hash": "20c03f600839aa292bff651a188c0945"
+  },
+  "/home/hermes/cortex/references/assistant-ui-llms.txt": {
+    "mtime": 1779792612.184985,
+    "hash": "d299b28c80ac5c28ad2a7b94615cb06f"
+  },
+  "/home/hermes/cortex/blocks/specs/NLAD_v1.0_spec.md": {
+    "mtime": 1779323948.4408753,
+    "hash": "ee5523b30faf99e85712859eecfc133e"
+  },
+  "/home/hermes/cortex/blocks/examples/generated_block_20260520_175808.yaml": {
+    "mtime": 1779325088.287754,
+    "hash": "f933fee1b7ef9fc46f661a578027bdf4"
+  },
+  "/home/hermes/cortex/blocks/templates/BLOCK.yaml": {
+    "mtime": 1779323308.2728057,
+    "hash": "28cf815133447d0ee0b00c176161f99d"
+  },
+  "/home/hermes/cortex/integrations/INDEX.md": {
+    "mtime": 1779846999.504886,
+    "hash": "388b031a9dcd0aa75ad9a77d7a9787b5"
+  },
+  "/home/hermes/cortex/integrations/TOOL-INVENTORY.md": {
+    "mtime": 1779846146.5511067,
+    "hash": "354d3a251352572f1fbaf1d7a948b298"
+  },
+  "/home/hermes/cortex/integrations/ghl/SPEC.md": {
+    "mtime": 1779846100.226988,
+    "hash": "f0501b2349c4cf3bb293ee05c5e0308e"
+  },
+  "/home/hermes/cortex/integrations/nmi/SPEC.md": {
+    "mtime": 1779842134.8850207,
+    "hash": "c5001c9fb2bfe58f8d7eb411b60c0632"
+  },
+  "/home/hermes/cortex/integrations/slack/SPEC.md": {
+    "mtime": 1779843488.3527474,
+    "hash": "67d9873d744e8f5ba0660cff24a140c6"
+  },
+  "/home/hermes/cortex/integrations/vapi/SPEC.md": {
+    "mtime": 1779846036.8428195,
+    "hash": "269ab16f9b269e461028b9251465bd52"
+  },
+  "/home/hermes/cortex/integrations/base44/SPEC.md": {
+    "mtime": 1779844339.1165385,
+    "hash": "e14be1e2af4e59863b44ac9cbc7a457f"
+  },
+  "/home/hermes/cortex/agents/recovery-agent.md": {
+    "mtime": 1779908696.0945752,
+    "hash": "9a121dc239a76be922582333f0f1376f"
+  },
+  "/home/hermes/cortex/agents/billing-agent.md": {
+    "mtime": 1779908689.5555615,
+    "hash": "4b7085b4eeecee4aea7185dbe4063cea"
+  },
+  "/home/hermes/cortex/agents/hermes.md": {
+    "mtime": 1779908692.126567,
+    "hash": "8a8e5bac62d9a9bbb364c626048e7db3"
+  },
+  "/home/hermes/cortex/agents/hygiene-agent.md": {
+    "mtime": 1779908694.073571,
+    "hash": "6644d3d8f69eb58aac7272687ac0f08f"
+  },
+  "/home/hermes/cortex/external_docs/claude-agent-sdk-overview.html": {
+    "mtime": 1779509158.4055932,
+    "hash": "37a9ce59557f1a37a4167e8b4a31af66"
+  },
+  "/home/hermes/cortex/external_docs/langchain-index.txt": {
+    "mtime": 1779509159.1435945,
+    "hash": "0b83dce485ebdbdad61c48d479bfb3c2"
+  },
+  "/home/hermes/cortex/external_docs/vercel-ai-sdk-index.txt": {
+    "mtime": 1779509157.9965925,
+    "hash": "826ebe772d17b540dbb91b5c284f44b8"
+  },
+  "/home/hermes/cortex/external_docs/assistant-ui-index.txt": {
+    "mtime": 1779509157.7315922,
+    "hash": "d6eb8eca9c85049ce664bc9444d51392"
+  },
+  "/home/hermes/cortex/external_docs/claude-agent-sdk-alt.html": {
+    "mtime": 1779509158.943594,
+    "hash": "37a9ce59557f1a37a4167e8b4a31af66"
+  },
+  "/home/hermes/cortex/external_docs/assistant-ui-full.txt": {
+    "mtime": 1779509157.623592,
+    "hash": "60e1654eada704ddcc061a6d54c1b490"
+  },
+  "/home/hermes/cortex/memory/rolling-context.md": {
+    "mtime": 1778199437.4067187,
+    "hash": "8c93ac17884f0b39f0fed46e105c2c9d"
+  },
+  "/home/hermes/cortex/memory/operational-vision.md": {
+    "mtime": 1778201356.0778098,
+    "hash": "a3bfc39136050f81f7a2843977d9e376"
+  },
+  "/home/hermes/cortex/memory/2026-05-27-tier1-snapshot-locked.md": {
+    "mtime": 1779905930.9985428,
+    "hash": "6ad1f6e0914af6dc758934244dd2f61a"
+  },
+  "/home/hermes/cortex/memory/operations/jarvis-iota-may27-shipped.md": {
+    "mtime": 1779912822.4005525,
+    "hash": "6697e63a6581c6317a00e56d94ae25db"
+  },
+  "/home/hermes/cortex/knowledge/golden-vault-billing-mastery-v2.md": {
+    "mtime": 1779908770.848731,
+    "hash": "05b938b4d47abd74914e5c346ce6b40e"
+  },
+  "/home/hermes/cortex/bridges/design-md.md": {
+    "mtime": 1779908781.1287525,
+    "hash": "e47df28138899cdf45df4651c6da3eeb"
+  },
+  "/home/hermes/cortex/bridges/ghl.md": {
+    "mtime": 1779908789.6647701,
+    "hash": "4ca657cfb575d642f1efb7a78ee00d68"
+  },
+  "/home/hermes/cortex/bridges/freshcaller.md": {
+    "mtime": 1779908787.7627664,
+    "hash": "0531fb9865cd0edf5d0ac1f94b78c8cd"
+  },
+  "/home/hermes/cortex/bridges/slack-design.md": {
+    "mtime": 1779908799.3007903,
+    "hash": "13842a89f569685c34d4cb642b6640e1"
+  },
+  "/home/hermes/cortex/bridges/base44.md": {
+    "mtime": 1779908775.5027406,
+    "hash": "e7b7b1251231cc637aea2af148debcf7"
+  },
+  "/home/hermes/cortex/bridges/campaign-orchestrator.md": {
+    "mtime": 1779908779.2927487,
+    "hash": "bfd7551387f70360612e05c9b611f79f"
+  },
+  "/home/hermes/cortex/bridges/github.md": {
+    "mtime": 1779908791.488774,
+    "hash": "1918718301fee2c8e24b09d6d004d551"
+  },
+  "/home/hermes/cortex/bridges/nmi.md": {
+    "mtime": 1779908795.5137823,
+    "hash": "6a385a11b06c916be5a33da12baf2698"
+  },
+  "/home/hermes/cortex/bridges/make.md": {
+    "mtime": 1779908793.3407779,
+    "hash": "5f759e521306a2e8fa56c7e4b4d605bb"
+  },
+  "/home/hermes/cortex/bridges/email.md": {
+    "mtime": 1779908784.1477587,
+    "hash": "8d8cad1b20f0847e748c1da44c25a372"
+  },
+  "/home/hermes/cortex/bridges/bulk-engine.md": {
+    "mtime": 1779908777.2887444,
+    "hash": "683fcfd447e814be5698dce800beb274"
+  },
+  "/home/hermes/cortex/bridges/slack.md": {
+    "mtime": 1779908801.3567946,
+    "hash": "4f6c8c26e5d0921323ec6c44ae650100"
+  },
+  "/home/hermes/cortex/bridges/forth.md": {
+    "mtime": 1779908785.8917623,
+    "hash": "36beeed3a8ffcee18eb4d3875a5158c9"
+  },
+  "/home/hermes/cortex/bridges/self-deploy.md": {
+    "mtime": 1779908797.3877864,
+    "hash": "f834fc53e401eec15dc7a5a0231f07e0"
+  },
+  "/home/hermes/cortex/bridges/vapi.md": {
+    "mtime": 1779908803.3767986,
+    "hash": "fc6a6468255ef9a77b81348581a9506c"
+  },
+  "/home/hermes/cortex/rules/execution-momentum.md": {
+    "mtime": 1779908686.2015545,
+    "hash": "c18248a1ae4df4754e14c3dae7c62e4f"
+  },
+  "/home/hermes/cortex/rules/communications.md": {
+    "mtime": 1779908682.8365474,
+    "hash": "2250919a9bfcb7bf6d755181b1905eea"
+  },
+  "/home/hermes/cortex/rules/enrollment.md": {
+    "mtime": 1779908684.475551,
+    "hash": "d9f80271e4c5013f05a77ab9bc2299c9"
+  },
+  "/home/hermes/cortex/rules/billing.md": {
+    "mtime": 1779908680.0445416,
+    "hash": "b3b9b567f9630c352ca95424b1c8bd32"
+  },
+  "/home/hermes/cortex/rules/changelog-discipline.md": {
+    "mtime": 1779087177.8352787,
+    "hash": "6e28a5ccf3d0a3da034294029d105022"
+  },
+  "/home/hermes/cortex/playbooks/freshcaller-operations.md": {
+    "mtime": 1779908742.9506729,
+    "hash": "fee9baa4ae10b96caf17bff3c41e71ba"
+  },
+  "/home/hermes/cortex/playbooks/engineering-excellence.md": {
+    "mtime": 1779887087.8420367,
+    "hash": "162fd79b4ba4a9ac29450e5626d5b4c1"
+  },
+  "/home/hermes/cortex/playbooks/mcp-edit-protocol.md": {
+    "mtime": 1779908748.295684,
+    "hash": "b184ec8813ebffdbba5f10b91611e833"
+  },
+  "/home/hermes/cortex/playbooks/streaming-gap-fix-prd.md": {
+    "mtime": 1779908759.4587073,
+    "hash": "de722e557ca3cd8ea60aa14cf3c793fa"
+  },
+  "/home/hermes/cortex/playbooks/full-stack-development-architecture.md": {
+    "mtime": 1779908744.933677,
+    "hash": "c8bb3e672e24fd2b25a347fe6d919ec4"
+  },
+  "/home/hermes/cortex/playbooks/data-query-intelligence.md": {
+    "mtime": 1779908728.4756427,
+    "hash": "c661bb898aeb7737334712d81a6931a1"
+  },
+  "/home/hermes/cortex/playbooks/daily-report.md": {
+    "mtime": 1779887082.1320257,
+    "hash": "a00f2e27a3c92671f76ee7cdac502b0d"
+  },
+  "/home/hermes/cortex/playbooks/onboarding-qc.md": {
+    "mtime": 1779908751.8966916,
+    "hash": "58e9ee3e68b4e7503ffd91f2fb90cd5b"
+  },
+  "/home/hermes/cortex/playbooks/prd-implementation-standard.md": {
+    "mtime": 1779908757.6937037,
+    "hash": "15b87dc248267b9f69c4e76ae07bd6c6"
+  },
+  "/home/hermes/cortex/playbooks/dispute-workflow.md": {
+    "mtime": 1779908730.7276475,
+    "hash": "4c13230b754c3be7a341bddb3839cdad"
+  },
+  "/home/hermes/cortex/playbooks/customer-360.md": {
+    "mtime": 1779908723.2386317,
+    "hash": "4a69c97895ad5672c33e89ac92e7abe5"
+  },
+  "/home/hermes/cortex/playbooks/action-safety.md": {
+    "mtime": 1779908699.7305827,
+    "hash": "ca9868eee3d4655842c275d953b95b87"
+  },
+  "/home/hermes/cortex/playbooks/credit-dispute.md": {
+    "mtime": 1779908720.990627,
+    "hash": "f9c7927a8dbe8f4520cee438b1e30bae"
+  },
+  "/home/hermes/cortex/playbooks/enrollment-lifecycle.md": {
+    "mtime": 1779908737.2826612,
+    "hash": "1520b78afbc4469bbd71371ae6f6be2a"
+  },
+  "/home/hermes/cortex/playbooks/operational-mind-map.md": {
+    "mtime": 1779908754.0766962,
+    "hash": "77b46521e597e6a4d4220a7a6416a2e4"
+  },
+  "/home/hermes/cortex/playbooks/enrollment.md": {
+    "mtime": 1779908739.171665,
+    "hash": "7a17df7efb98fc4760063a1cab4c928a"
+  },
+  "/home/hermes/cortex/playbooks/billing-forensics-audit.md": {
+    "mtime": 1779908705.2835944,
+    "hash": "d49f3c8760c346f39f69120b07e5bd66"
+  },
+  "/home/hermes/cortex/playbooks/billing-recovery.md": {
+    "mtime": 1779908707.075598,
+    "hash": "5c0ff7b5f75378343fa75268ead5aabc"
+  },
+  "/home/hermes/cortex/playbooks/client-financial-review-v2.md": {
+    "mtime": 1779908710.9296062,
+    "hash": "acd7c3483dda22b2b184c48927a8759d"
+  },
+  "/home/hermes/cortex/playbooks/cof-compliance.md": {
+    "mtime": 1779908719.2566235,
+    "hash": "2bb18f3f29b96801073f9c1ff7db328c"
+  },
+  "/home/hermes/cortex/playbooks/expand-my-thoughts.md": {
+    "mtime": 1779908741.098669,
+    "hash": "f9d6da0883efdef2fe843a5df47adbb7"
+  },
+  "/home/hermes/cortex/playbooks/ticket-lifecycle-prd.md": {
+    "mtime": 1779908765.3937197,
+    "hash": "d8d89daef35ca6bd5803b746c00eb2f0"
+  },
+  "/home/hermes/cortex/playbooks/vps-autonomous-operations.md": {
+    "mtime": 1779908767.0877233,
+    "hash": "827381bf421201cfc7b0b4d06e75dacf"
+  },
+  "/home/hermes/cortex/playbooks/nmi-troubleshooting.md": {
+    "mtime": 1779908750.176688,
+    "hash": "2dc1697537ef1a92bb5d020fc5885e22"
+  },
+  "/home/hermes/cortex/playbooks/theme-system.md": {
+    "mtime": 1779908763.4017155,
+    "hash": "d3ebd3e732664bd6aa3b075e116785bb"
+  },
+  "/home/hermes/cortex/playbooks/client-financial-review-summary.md": {
+    "mtime": 1779908708.996602,
+    "hash": "70ef10b09f373d219447953f662dbf95"
+  },
+  "/home/hermes/cortex/playbooks/customer-lifecycle-checklist.md": {
+    "mtime": 1779887080.3130221,
+    "hash": "2205a1efa9b9fe3cb23524f9569b988c"
+  },
+  "/home/hermes/cortex/playbooks/automation-operations.md": {
+    "mtime": 1779908703.0535896,
+    "hash": "a0b05f17002a231b86f93ae52564e29c"
+  },
+  "/home/hermes/cortex/prd/2026-05-27-chat-lifecycle-artifact-isolation-prd.md": {
+    "mtime": 1779907014.9395018,
+    "hash": "5a0b32741157e922c96ed145361c9d81"
+  },
+  "/home/hermes/cortex/prd/master-blueprint.md": {
+    "mtime": 1778201361.128818,
+    "hash": "12271d17e4ab0c3e28e0ca218d259db6"
+  },
+  "/home/hermes/cortex/prd/affine-deployment-plan-v1.md": {
+    "mtime": 1779844870.6971889,
+    "hash": "81465db57852f51e062fb91a0915c64b"
+  },
+  "/home/hermes/cortex/prd/slack-canvas-synthesis-addendum-v1.md": {
+    "mtime": 1779678143.1240432,
+    "hash": "85ba9dd08e9d6850363680ded786bf5c"
+  },
+  "/home/hermes/cortex/prd/vps-shared-cortex-brain-wiring-prd.md": {
+    "mtime": 1778199401.2826622,
+    "hash": "e7fea38f613ccfdbfa3692014e6b791e"
+  },
+  "/home/hermes/cortex/prd/billing-intelligence.md": {
+    "mtime": 1778201359.815816,
+    "hash": "ddf77cd60e77a7b0be8cf7c44ba0a43c"
+  },
+  "/home/hermes/cortex/prd/tagada-analysis.md": {
+    "mtime": 1778201357.3038118,
+    "hash": "6ca0c9cf63963c775844933959f2021b"
+  },
+  "/home/hermes/cortex/prd/structured-slack-updates-v1.md": {
+    "mtime": 1779676066.2627246,
+    "hash": "4e7780136304c913d2cf4c767a72e657"
+  },
+  "/home/hermes/cortex/prd/slack-canvas-synthesis-addendum-v2.md": {
+    "mtime": 1779678381.800762,
+    "hash": "ed1cb907e95a42744969ec7ddcd1394b"
+  },
+  "/home/hermes/cortex/prd/payment-reliability.md": {
+    "mtime": 1778201358.7008142,
+    "hash": "2d2ec0cfe39a0818cf7e0bd121db2156"
+  },
+  "/home/hermes/cortex/skills/slack-canvas-mastery.md": {
+    "mtime": 1779908643.7774658,
+    "hash": "5a2704978b741fece0f9607ee5101229"
+  },
+  "/home/hermes/cortex/skills/master-customer-operations.md": {
+    "mtime": 1778376089.1416411,
+    "hash": "ead2d73e325eed0113ee484f6118d3e5"
+  },
+  "/home/hermes/cortex/skills/base44-cli-deploy-mastery.md": {
+    "mtime": 1779822072.2759867,
+    "hash": "19fe4405f886eb58fb1ddb45bafe52f4"
+  },
+  "/home/hermes/cortex/skills/cloudflare-bypass-streaming-architecture.md": {
+    "mtime": 1779908473.5091076,
+    "hash": "30887f875b76200802f71f62d9433d21"
+  },
+  "/home/hermes/cortex/skills/artifact-response-pattern-system-prompt.md": {
+    "mtime": 1779869623.862847,
+    "hash": "ebcd021c8f6e80e97ba0dfa5b186517f"
+  },
+  "/home/hermes/cortex/skills/ghl-inbound-routing.md": {
+    "mtime": 1779846179.2131882,
+    "hash": "200ac8b6fa053d7669a14fb4e01676e7"
+  },
+  "/home/hermes/cortex/skills/superpowers-coding-flow.md": {
+    "mtime": 1779908650.7314804,
+    "hash": "f9e72931e51153ba42301143bd6197fd"
+  },
+  "/home/hermes/cortex/skills/nmi-golden-vault-architecture.md": {
+    "mtime": 1779908600.7003756,
+    "hash": "e598a520245c27ada3a1bd4c916c35a3"
+  },
+  "/home/hermes/cortex/skills/external-package-api-discovery.md": {
+    "mtime": 1779908516.6501987,
+    "hash": "f5ec167aa54f91546080ff66c29eff15"
+  },
+  "/home/hermes/cortex/skills/model-orchestration-architecture.md": {
+    "mtime": 1779049714.054542,
+    "hash": "a9486c23961f35e5b5178bb93cc4bcd0"
+  },
+  "/home/hermes/cortex/skills/assistant-ui-vercel-ai-sdk.md": {
+    "mtime": 1779886813.280497,
+    "hash": "cb0b1de79d344f7bb9bba5a500401b8c"
+  },
+  "/home/hermes/cortex/skills/github-first-development.md": {
+    "mtime": 1779908520.2752063,
+    "hash": "c239235d64793b7c6700ad7207a45e48"
+  },
+  "/home/hermes/cortex/skills/python-slots-discipline.md": {
+    "mtime": 1779837380.1525881,
+    "hash": "f367cb628d79a088a009576723e7d1be"
+  },
+  "/home/hermes/cortex/skills/pre-payment-cancellation-guard.md": {
+    "mtime": 1779908611.2313976,
+    "hash": "6712c4c1e5ad806bcf748c6582e694e6"
+  },
+  "/home/hermes/cortex/skills/vps-canvas-mastery.md": {
+    "mtime": 1779843545.2347796,
+    "hash": "e16ee601f963e191ae2bb3c415e566bf"
+  },
+  "/home/hermes/cortex/skills/wiki-nextjs-mdx-generator.md": {
+    "mtime": 1779843836.4200053,
+    "hash": "8efefd1522cac90c0322cd832f795476"
+  },
+  "/home/hermes/cortex/skills/cross-session-context-continuity.md": {
+    "mtime": 1779908499.284162,
+    "hash": "78c621277f40405eeae5e1388192f163"
+  },
+  "/home/hermes/cortex/skills/hermes-vps-mastery.md": {
+    "mtime": 1779908530.4562278,
+    "hash": "e915fbdb09e74cd4f420283cb7601c92"
+  },
+  "/home/hermes/cortex/skills/report-agent-jarvis-reasoning.md": {
+    "mtime": 1779908622.943422,
+    "hash": "9e0e0dc7244e0c9fef09e79a6de6def4"
+  },
+  "/home/hermes/cortex/skills/wiki-compile-agent.md": {
+    "mtime": 1779843832.0840013,
+    "hash": "4c36bd4876e121c7a4bdd82aa8fbe470"
+  },
+  "/home/hermes/cortex/skills/claude-agent-sdk-hooks-mastery.md": {
+    "mtime": 1779843118.8992505,
+    "hash": "2dba3538312904e05216efa0dcfce8be"
+  },
+  "/home/hermes/cortex/skills/sync360-data-engine.md": {
+    "mtime": 1779908652.505484,
+    "hash": "14155ef28277f5806fc3978430354bc3"
+  },
+  "/home/hermes/cortex/skills/orchestration-hardening-may18.md": {
+    "mtime": 1779085618.3935688,
+    "hash": "4a93798c76070b7c86a8d11b10d48f7b"
+  },
+  "/home/hermes/cortex/skills/wiki-agent-usage.md": {
+    "mtime": 1779908676.6845345,
+    "hash": "d00927b790aa6425ce00032a207543f5"
+  },
+  "/home/hermes/cortex/skills/self-improvement-protocol.md": {
+    "mtime": 1779908639.8614576,
+    "hash": "0071670ff947a90858008353cbf44287"
+  },
+  "/home/hermes/cortex/skills/mission-completion-discipline.md": {
+    "mtime": 1779840064.7932835,
+    "hash": "3603c612f70fc22fc5273b58e4749ee3"
+  },
+  "/home/hermes/cortex/skills/auto-slack-on-deploy.md": {
+    "mtime": 1779843558.8047879,
+    "hash": "8ea3696870c40714a6868e82989b2d03"
+  },
+  "/home/hermes/cortex/skills/mcp-edit-execution.md": {
+    "mtime": 1779908573.0063174,
+    "hash": "0a954419c7aedaebfd65be274b9a5fa8"
+  },
+  "/home/hermes/cortex/skills/billing-laws.md": {
+    "mtime": 1779822110.8630536,
+    "hash": "4a0be10cfea337f6fccf6896cc94332a"
+  },
+  "/home/hermes/cortex/skills/mcp-stuck-job-recovery.md": {
+    "mtime": 1779908582.7433376,
+    "hash": "52fd1a2ae45692ba3b464dd9fed4c8ff"
+  },
+  "/home/hermes/cortex/skills/mit-charge-protocol.md": {
+    "mtime": 1779908590.2383535,
+    "hash": "577df0b0ea49abe2692669f641bbc7ca"
+  },
+  "/home/hermes/cortex/skills/base44-publish-api.md": {
+    "mtime": 1779865242.688638,
+    "hash": "91acfc1b0908b07a88ad5661f2f5bba4"
+  },
+  "/home/hermes/cortex/skills/skill-discovery-hooks.md": {
+    "mtime": 1779908641.5524611,
+    "hash": "f9c0aecfbbac040c48606d8c9dbb0ebb"
+  },
+  "/home/hermes/cortex/skills/manual-mission-flow.md": {
+    "mtime": 1779908562.458295,
+    "hash": "68dc6eddebf23cfc563503bc6d8578fb"
+  },
+  "/home/hermes/cortex/skills/wiki-synthesis-agent.md": {
+    "mtime": 1779843838.334007,
+    "hash": "04ae81d78f463f40a84bb7854c442466"
+  },
+  "/home/hermes/cortex/skills/billing-charge-decision-tree-v2.md": {
+    "mtime": 1779908455.7060697,
+    "hash": "4892e4bddb7b10e7ebee2e402cdffb0e"
+  },
+  "/home/hermes/cortex/skills/dream-mode-continuous-refinement.md": {
+    "mtime": 1779908508.328181,
+    "hash": "5b2a1c0d895e3d0d07a520b870b2772a"
+  },
+  "/home/hermes/cortex/skills/autonomous-coding-loop-v1.md": {
+    "mtime": 1779886820.8415124,
+    "hash": "5aa5512432f62e1a4bdd5dd01162a60f"
+  },
+  "/home/hermes/cortex/skills/wiki-compiler-agent.md": {
+    "mtime": 1779843834.3940034,
+    "hash": "78a84d602044469b399828e080e2c6ac"
+  },
+  "/home/hermes/cortex/skills/model-orchestration-architecture-v2.md": {
+    "mtime": 1779051401.2626033,
+    "hash": "1ed26aa14a06bb9fe402dc3f4074ac6f"
+  },
+  "/home/hermes/cortex/skills/master-communications.md": {
+    "mtime": 1778376089.1416411,
+    "hash": "faa17a87f3810e0a91a3afa94c53d46e"
+  },
+  "/home/hermes/cortex/skills/mass-data-handling.md": {
+    "mtime": 1779843776.8309522,
+    "hash": "211d6f8e5756e8416e893f7b9eb3e1a9"
+  },
+  "/home/hermes/cortex/skills/recovery-final-check-protocol.md": {
+    "mtime": 1779908620.961418,
+    "hash": "dc4f0276ef587251b1cd131f42da802e"
+  },
+  "/home/hermes/cortex/skills/assistant-ui-mastery.md": {
+    "mtime": 1779792612.181985,
+    "hash": "8f1c21d8a826285f7152e5feeeaecfbe"
+  },
+  "/home/hermes/cortex/skills/connector-ghl-mastery.md": {
+    "mtime": 1779846165.044153,
+    "hash": "708618e98f1d19168f422f111ca122e5"
+  },
+  "/home/hermes/cortex/skills/vps-mcp-edit-pipeline.md": {
+    "mtime": 1779908667.8715162,
+    "hash": "e1aef015e56171e0b4c7ecccd003c082"
+  },
+  "/home/hermes/cortex/skills/autonomous-vps-coder.md": {
+    "mtime": 1779800420.5900064,
+    "hash": "1f5c67b72641652d87340b6de4153415"
+  },
+  "/home/hermes/cortex/skills/vps-mission-orchestration-laws.md": {
+    "mtime": 1779908669.63552,
+    "hash": "b9b68783e19e7685acea8abc787fd2ef"
+  },
+  "/home/hermes/cortex/skills/payment-flow-playbook.md": {
+    "mtime": 1779908606.232387,
+    "hash": "50ec8e7cdf17bd3c045a56f31c8143c7"
+  },
+  "/home/hermes/cortex/skills/golden-mit-payment-flow.md": {
+    "mtime": 1779908526.5492196,
+    "hash": "8193dec11f3dcf79ef49db5db8b571cf"
+  },
+  "/home/hermes/cortex/skills/autonomous-agent-workflow-map.md": {
+    "mtime": 1779886818.8995085,
+    "hash": "16d1da229b9377da16e522306656944a"
+  },
+  "/home/hermes/cortex/skills/dream-worker-bulletproof.md": {
+    "mtime": 1779908512.3911896,
+    "hash": "2438a1d84b203416cca4cfd2e49d0d12"
+  },
+  "/home/hermes/cortex/skills/cloudflare-resilience-protocol.md": {
+    "mtime": 1779908478.0781171,
+    "hash": "d4398670aed9d3a19af58afb6812e8bb"
+  },
+  "/home/hermes/cortex/skills/test-small-scale-large.md": {
+    "mtime": 1779908654.404488,
+    "hash": "132afdda31d543c06af30d464f68e28b"
+  },
+  "/home/hermes/cortex/skills/mcp-edit-error-handling.md": {
+    "mtime": 1779908570.974313,
+    "hash": "e41ac53bd65191937e268a7e3218f0cf"
+  },
+  "/home/hermes/cortex/skills/master-infrastructure.md": {
+    "mtime": 1778376089.1416411,
+    "hash": "6f84f2b99e4fa043603ce9276c5ebe20"
+  },
+  "/home/hermes/cortex/skills/mcp-controlled-iteration-master.md": {
+    "mtime": 1779908566.4633036,
+    "hash": "cbea829dda5da49909b1816ee329a19c"
+  },
+  "/home/hermes/cortex/skills/kimi-orchestration-best-practices.md": {
+    "mtime": 1779908554.9292793,
+    "hash": "f4d59423a4777d5b05bb274c98c18770"
+  },
+  "/home/hermes/cortex/skills/connector-slack-mastery.md": {
+    "mtime": 1779908497.374158,
+    "hash": "1b269a2a9d930352af1c9269d7c3e085"
+  },
+  "/home/hermes/cortex/skills/ui-is-vercel-not-base44.md": {
+    "mtime": 1779837380.151588,
+    "hash": "cd1cf9b1ea143692920a52dbc8acdd6d"
+  },
+  "/home/hermes/cortex/skills/sdlc-pipeline-v2.md": {
+    "mtime": 1779908632.4044418,
+    "hash": "f101b63d40614ce3c17f01ddfe8e261e"
+  },
+  "/home/hermes/cortex/skills/tool-inventory-discovery.md": {
+    "mtime": 1779841555.3916085,
+    "hash": "87f087c56dfe5cc8a12642fac3b6d147"
+  },
+  "/home/hermes/cortex/skills/unified-architecture-v1.md": {
+    "mtime": 1779908656.5574925,
+    "hash": "b6cdeee5a8b82ec8038f1392fb823736"
+  },
+  "/home/hermes/cortex/skills/slack-synthesis-pipeline.md": {
+    "mtime": 1779051871.7480915,
+    "hash": "6dca6c6b31a49f6719889da17dcee520"
+  },
+  "/home/hermes/cortex/skills/design-system-billing-components.md": {
+    "mtime": 1779908505.7861757,
+    "hash": "c83f7dd8a349960e011f3d39dbc23f95"
+  },
+  "/home/hermes/cortex/skills/billing-resolution-workflow.md": {
+    "mtime": 1779908469.3160987,
+    "hash": "3f25f42b799674492474c36e6429e637"
+  },
+  "/home/hermes/cortex/skills/inline-coding-skill.md": {
+    "mtime": 1779908536.23524,
+    "hash": "972188985d48f2d94b3290a61b724289"
+  },
+  "/home/hermes/cortex/skills/safe-self-restart-protocol.md": {
+    "mtime": 1779908628.3154333,
+    "hash": "2de52f23e47cf38c3c51420e44a170c1"
+  },
+  "/home/hermes/cortex/skills/collect-checkout-product-catalog.md": {
+    "mtime": 1779908490.1551428,
+    "hash": "6cbbd35bf109b7ccc15c901105f8c671"
+  },
+  "/home/hermes/cortex/skills/billing-cof-flags-canonical.md": {
+    "mtime": 1779842203.1630933,
+    "hash": "0dcb6dc344c37bdfb82b3da10c329b90"
+  },
+  "/home/hermes/cortex/skills/factory-missions-architecture.md": {
+    "mtime": 1779908518.4132023,
+    "hash": "7648f3fb016331c5a5ddddc1fedc06ce"
+  },
+  "/home/hermes/cortex/skills/deepseek-api-reference.md": {
+    "mtime": 1779051773.8729784,
+    "hash": "4d4767725f965e1bd885bc0d1224a4f3"
+  },
+  "/home/hermes/cortex/skills/cherry-picking-framework-adoption.md": {
+    "mtime": 1779908471.1421025,
+    "hash": "035f336dc051703a5c8c962f315e473d"
+  },
+  "/home/hermes/cortex/skills/vercel-deploy-discipline.md": {
+    "mtime": 1779908658.4044964,
+    "hash": "bba5070ae1fb5a0b173337e6d6851c90"
+  },
+  "/home/hermes/cortex/skills/notebook-lm-research-protocol.md": {
+    "mtime": 1779845189.9775968,
+    "hash": "58883422a3cca420db486d38c24dff55"
+  },
+  "/home/hermes/cortex/skills/connector-base44-mastery.md": {
+    "mtime": 1779908493.4451497,
+    "hash": "cffbbdf73967c220567bd45a7f436fd3"
+  },
+  "/home/hermes/cortex/skills/runtime-routing-deepseek-orchestrator.md": {
+    "mtime": 1779908626.3654292,
+    "hash": "95d673683a83aeeb07bb0aef846e2e93"
+  },
+  "/home/hermes/cortex/skills/dream-mode-self-healing.md": {
+    "mtime": 1779908510.3961854,
+    "hash": "365fb193f600f6544abe64f914c1d5ff"
+  },
+  "/home/hermes/cortex/skills/graphify-centric-pattern.md": {
+    "mtime": 1779844305.7145,
+    "hash": "563ef6e85e0db3f46b3d858fede3e21e"
+  },
+  "/home/hermes/cortex/skills/kimi-api-reference.md": {
+    "mtime": 1779051074.4023972,
+    "hash": "f6ca02f59984be5401bd4810d7f567b3"
+  },
+  "/home/hermes/cortex/skills/auto-continue-protocol.md": {
+    "mtime": 1779886817.0345047,
+    "hash": "7ae33b6a036a646cf4adaae02fd467c6"
+  },
+  "/home/hermes/cortex/skills/golden-vault-payment-master.md": {
+    "mtime": 1778375922.6173472,
+    "hash": "2e423044ad4a709afa4c6119afc17afa"
+  },
+  "/home/hermes/cortex/skills/github-mcp-sync-protocol.md": {
+    "mtime": 1779908522.2942104,
+    "hash": "2e814b61b0d0ed5302bd45c80dba8aab"
+  },
+  "/home/hermes/cortex/skills/testing-deep-research.md": {
+    "mtime": 1779082449.1347656,
+    "hash": "af7df67406ee6531be0e001eaecbe55a"
+  },
+  "/home/hermes/cortex/skills/auto-continue-checkpoint-protocol.md": {
+    "mtime": 1779886815.0425005,
+    "hash": "322b39917db981291ff8ceff12d0ef03"
+  },
+  "/home/hermes/cortex/skills/orchestration-retrospective-v1.md": {
+    "mtime": 1779908604.271383,
+    "hash": "b1ebdf1f37a0963e406bc1831909b5ae"
+  },
+  "/home/hermes/cortex/skills/dream-worker-gaps-may18.md": {
+    "mtime": 1779082581.2309353,
+    "hash": "ff65ba64155743cda52e9c2a5b44d148"
+  },
+  "/home/hermes/cortex/skills/claude-agent-sdk-mastery.md": {
+    "mtime": 1779840064.7912834,
+    "hash": "3957c7f8a1bbcd7b30b76b49313e2091"
+  },
+  "/home/hermes/cortex/skills/notebooklm-mcp-integration.md": {
+    "mtime": 1779908602.490379,
+    "hash": "56e181fb950671a40ced9dfbf06b6691"
+  },
+  "/home/hermes/cortex/skills/hostinger-mcp-integration.md": {
+    "mtime": 1779908534.391236,
+    "hash": "95bddacc7b8165f3763864d31421ba9d"
+  },
+  "/home/hermes/cortex/skills/cortex-citation-protocol.md": {
+    "mtime": 1779760262.1900122,
+    "hash": "7e2a7015c01887fc41a3c89a4ad760c6"
+  },
+  "/home/hermes/cortex/skills/nmi-charge-decision-tree-v3.md": {
+    "mtime": 1779908598.3863707,
+    "hash": "42e6639876e722a4c003f982c1d442e0"
+  },
+  "/home/hermes/cortex/skills/three-tier-ux-architecture.md": {
+    "mtime": 1779844870.692189,
+    "hash": "66c82a7d8e2ead51bbb0d140295f13f6"
+  },
+  "/home/hermes/cortex/skills/connector-vapi-mastery.md": {
+    "mtime": 1779846102.8179948,
+    "hash": "2ce6ddf540aad99a3bc41a31ece5a278"
+  },
+  "/home/hermes/cortex/skills/self-heal-loop-protocol.md": {
+    "mtime": 1779908636.5934508,
+    "hash": "739acca548a5ef780ad4f5fa4dd7c343"
+  },
+  "/home/hermes/cortex/skills/operational-workflows-master.md": {
+    "mtime": 1779846137.0630827,
+    "hash": "1f865f2e2765dc6d3a23b9f349ad06e0"
+  },
+  "/home/hermes/cortex/skills/base44-github-sync-research.md": {
+    "mtime": 1779908451.7670615,
+    "hash": "7ca852d7cc7e8c762f4aabb3120ead2d"
+  },
+  "/home/hermes/cortex/skills/kimi-k26-swarm-mastery.md": {
+    "mtime": 1779090012.4331703,
+    "hash": "cc15bfe8bc0fa72effa0f820f020633d"
+  },
+  "/home/hermes/cortex/skills/billing-operations-playbook.md": {
+    "mtime": 1778375922.632347,
+    "hash": "2b4031379dcfbc0a9ee6f7a1155894ef"
+  },
+  "/home/hermes/cortex/skills/mission-prompt-hardening.md": {
+    "mtime": 1779908586.3863454,
+    "hash": "895dc04ab14c01a86967843874812821"
+  },
+  "/home/hermes/cortex/skills/vapi-haley-flow.md": {
+    "mtime": 1779846121.6860435,
+    "hash": "1dfda35b8f0c841f6b39061d1d98b1b6"
+  },
+  "/home/hermes/cortex/skills/recovery-communication-chargeback-defense.md": {
+    "mtime": 1779908619.155414,
+    "hash": "9841fd4c75252d5cf7dcd2ad50bd05a4"
+  },
+  "/home/hermes/cortex/skills/lane-b-end-to-end-mastery.md": {
+    "mtime": 1779908558.7272873,
+    "hash": "b8282d678560768742c9666e0d3bfd6a"
+  },
+  "/home/hermes/cortex/skills/kimi-batch-api.md": {
+    "mtime": 1779908552.9602752,
+    "hash": "4ea2fbace2eae1d3a103586f824ceb10"
+  },
+  "/home/hermes/cortex/skills/cloudflare-mitigation-tactics-may26.md": {
+    "mtime": 1779908476.161113,
+    "hash": "3448d6cdd3637514bfe86e999cdb5525"
+  },
+  "/home/hermes/cortex/skills/mcp-edit-prompt-engineering.md": {
+    "mtime": 1779908580.6673334,
+    "hash": "4ed508cdd8887f65ed5d828b81dd0b7a"
+  },
+  "/home/hermes/cortex/skills/custom-docs-ingestion-mastery.md": {
+    "mtime": 1779843776.8249521,
+    "hash": "b17085ca4fec9a62eaef9bb5b709b999"
+  },
+  "/home/hermes/cortex/skills/vps-architecture-wiki.md": {
+    "mtime": 1779908660.2285001,
+    "hash": "6271f0c1bf43d4c0e4305bdc64e63708"
+  },
+  "/home/hermes/cortex/skills/connector-nmi-mastery.md": {
+    "mtime": 1779908495.497154,
+    "hash": "a6d453f1721c9d52e3c1bb3cf062af00"
+  },
+  "/home/hermes/cortex/skills/ai-native-crm-master-cardinal.md": {
+    "mtime": 1779914360.6510198,
+    "hash": "b0794bb4fac54adf9dbb0918e3040f06"
+  },
+  "/home/hermes/cortex/skills/mission-safeguards-canonical.md": {
+    "mtime": 1779908588.124349,
+    "hash": "b8782b63a35e4fd56167d14e39a35012"
+  },
+  "/home/hermes/cortex/skills/hermes-k26-agent-strategy-report.md": {
+    "mtime": 1779908528.4262235,
+    "hash": "5a50e10806cc3129874f16951d6ebba5"
+  },
+  "/home/hermes/cortex/skills/k26-swarm-autonomous-engine.md": {
+    "mtime": 1779908551.1012712,
+    "hash": "97355bb7dac80e86aa7b591b84b20d7a"
+  },
+  "/home/hermes/cortex/skills/sandbox-api-testing-rules.md": {
+    "mtime": 1779908630.3824377,
+    "hash": "ded27580bcf740a1b67166a3d2e5393c"
+  },
+  "/home/hermes/cortex/skills/manual-recovery-protocol.md": {
+    "mtime": 1779908564.5452995,
+    "hash": "21e36be4d8f91964e183034d13d5e073"
+  },
+  "/home/hermes/cortex/skills/vapi-webhook-pipeline.md": {
+    "mtime": 1779846156.4071314,
+    "hash": "bdf6439f4e0a6021dd988da96284244f"
+  },
+  "/home/hermes/cortex/skills/dual-brain-graphify-graphiti.md": {
+    "mtime": 1779908514.7341945,
+    "hash": "88ecbfab5300b006890ec40f3618197e"
+  },
+  "/home/hermes/cortex/skills/artifact-response-pattern.md": {
+    "mtime": 1779869606.5248144,
+    "hash": "489f98545ca0b6cc566e28b8c386b3a5"
+  },
+  "/home/hermes/cortex/skills/vps-dispatch-prompt-template.md": {
+    "mtime": 1779908661.9675038,
+    "hash": "f5f6c8039bf3b1c3b657bb9142bfdfae"
+  },
+  "/home/hermes/cortex/skills/jarvis-os-iota-vercel-alias-cardinal.md": {
+    "mtime": 1779908769.836729,
+    "hash": "fb0327fc93d3c03403cdbdd55dd36c2a"
+  },
+  "/home/hermes/cortex/skills/concurrent-mission-discipline.md": {
+    "mtime": 1779843476.265741,
+    "hash": "0ede75b1253753fa65afb4692537aa29"
+  },
+  "/home/hermes/cortex/skills/process-retrospective-deep-analysis.md": {
+    "mtime": 1779908615.1534057,
+    "hash": "e6c928bd1b9f0085bd324763fd75e5d0"
+  },
+  "/home/hermes/cortex/skills/autonomous-test-fix-deploy.md": {
+    "mtime": 1779908439.6470358,
+    "hash": "ecc29a379b1f05083fc112ec83c6198e"
+  },
+  "/home/hermes/cortex/skills/wave-2-stability-recovery.md": {
+    "mtime": 1779915236.3796055,
+    "hash": "25c0c7cb2c60be6fba7b4e01a92b4d44"
+  },
+  "/home/hermes/cortex/skills/mcp-edit-prd-driven.md": {
+    "mtime": 1779908578.7583294,
+    "hash": "d448258ad2aa9692e75379279e0a45d1"
+  },
+  "/home/hermes/cortex/skills/jdi-rvm-did-management.md": {
+    "mtime": 1779908544.2072568,
+    "hash": "2d50327cfd20460b3434cdf6a585326e"
+  },
+  "/home/hermes/cortex/skills/rate-limit-mitigation.md": {
+    "mtime": 1779908617.2764103,
+    "hash": "45c2e129f10cbbbc9cfd6674fe7ac085"
+  },
+  "/home/hermes/cortex/skills/github-safe-merge.md": {
+    "mtime": 1779908524.6622155,
+    "hash": "3629c2b65e0589b56581c5b60cfc947b"
+  },
+  "/home/hermes/cortex/skills/daily-ops-report.md": {
+    "mtime": 1779908501.154166,
+    "hash": "c5c1794e4e5aaeaafc87da436f378ed4"
+  },
+  "/home/hermes/cortex/skills/definitive-cloudflare-fix-architecture.md": {
+    "mtime": 1779908502.9431696,
+    "hash": "2c61cb19359a723272d98c1645d82d84"
+  },
+  "/home/hermes/cortex/skills/mcp-edit-orchestration-v2.md": {
+    "mtime": 1779908576.9873257,
+    "hash": "be61de14aca5ed339f018ddbc26767d6"
+  },
+  "/home/hermes/cortex/skills/ghl-campaign-mastery.md": {
+    "mtime": 1779846197.5852332,
+    "hash": "07003b20667521b0b73471ecc80ff8f4"
+  },
+  "/home/hermes/cortex/skills/slack-tool-error-handling.md": {
+    "mtime": 1779908459.6880782,
+    "hash": "c5eb34c84072102914ac7a2d8e678727"
+  },
+  "/home/hermes/cortex/skills/kimi-swarm-orchestration.md": {
+    "mtime": 1779908556.9032834,
+    "hash": "15cd0b2d4ca8ad9a67f779d248212ef8"
+  },
+  "/home/hermes/cortex/skills/prd-delivery-protocol.md": {
+    "mtime": 1779908609.3593936,
+    "hash": "1d63f38c85a7354c767473aa39f3b498"
+  },
+  "/home/hermes/cortex/skills/mcp-edit-lessons-learned.md": {
+    "mtime": 1779908575.255322,
+    "hash": "ff65114a8b64d7d2fe9d655c89929ea6"
+  },
+  "/home/hermes/cortex/skills/vps-file-drop-pattern.md": {
+    "mtime": 1779908666.1245124,
+    "hash": "51db13d3d881186f0e2fee596271d257"
+  },
+  "/home/hermes/cortex/skills/base44-deploy-pipeline-mastery.md": {
+    "mtime": 1779908446.36805,
+    "hash": "7208bc517bba4d88af33ba6d3b77289c"
+  },
+  "/home/hermes/cortex/skills/billing-imperatives.md": {
+    "mtime": 1779908461.6860824,
+    "hash": "478e89a531c418af2efde1e9fef8a1c4"
+  },
+  "/home/hermes/cortex/skills/vps-session-continuity-protocol.md": {
+    "mtime": 1779908671.6435242,
+    "hash": "4d1e4e2644caa7d268dd78d80602735b"
+  },
+  "/home/hermes/cortex/skills/billing-recon-action-framework.md": {
+    "mtime": 1779908465.5620906,
+    "hash": "128135b8df0dd9717ee6b68bc25ad799"
+  },
+  "/home/hermes/cortex/skills/integration-imperatives.md": {
+    "mtime": 1779908542.3232527,
+    "hash": "6b2619ae94115afe494547615da38d31"
+  },
+  "/home/hermes/cortex/skills/lane-b-github-deploy.md": {
+    "mtime": 1779908560.6452913,
+    "hash": "61d25359d5cb796aed5f2310bd965c11"
+  },
+  "/home/hermes/cortex/skills/vps-streaming-data-patterns.md": {
+    "mtime": 1779908674.7885306,
+    "hash": "731e1fe29483a698b1f8893596e294b4"
+  },
+  "/home/hermes/cortex/skills/newleaf/SKILL.md": {
+    "mtime": 1778952220.4140315,
+    "hash": "44a2b5df6b234866fffce5632ab4e46a"
+  },
+  "/home/hermes/cortex/skills/imported/writing-plans.md": {
+    "mtime": 1779081266.169679,
+    "hash": "890883d940563dcfea2253f6512e0825"
+  },
+  "/home/hermes/cortex/skills/imported/test-driven-development.md": {
+    "mtime": 1779081248.7856467,
+    "hash": "e8cf89209d00a870e7c3f154b2a48c1c"
+  },
+  "/home/hermes/cortex/skills/imported/subagent-driven-development.md": {
+    "mtime": 1779081248.7856467,
+    "hash": "8ceb20362c51d61ee2cbcec360bf0531"
+  },
+  "/home/hermes/cortex/skills/imported/verification-before-completion.md": {
+    "mtime": 1779081248.7856467,
+    "hash": "b1c94fe967e12e636fa9fc8064d33124"
+  },
+  "/home/hermes/cortex/skills/imported/systematic-debugging.md": {
+    "mtime": 1779081248.7856467,
+    "hash": "8970cf45d12e7767e52eb56bfba95774"
+  }
+}

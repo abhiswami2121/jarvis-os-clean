@@ -1,0 +1,378 @@
+"use client";
+
+import React, { useState, useRef, useEffect } from "react";
+import { motion } from "motion/react";
+import {
+  Brain,
+  ChevronDown,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Wrench,
+  Copy,
+  Check,
+} from "lucide-react";
+import {
+  type ReasoningMessagePartComponent,
+  type ToolCallMessagePartComponent,
+} from "@assistant-ui/react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
+import { JarvisStreamingText } from "@/components/jarvis/JarvisStreamingText";
+
+/* ==========================================================
+   JSON SYNTAX COLORING
+   keys=fuchsia-300, strings=emerald-300, numbers=amber-300,
+   booleans=cyan-300
+   ========================================================== */
+function jsonSyntaxHighlight(json: string): string {
+  if (!json) return "";
+  return json.replace(
+    /("(?:\\.|[^"\\])*")\s*:|("(?:\\.|[^"\\])*")|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|(\btrue\b|\bfalse\b|\bnull\b)/g,
+    (match, key, str, num, bool) => {
+      if (key) return `<span class="text-fuchsia-300">${key}</span>:`;
+      if (str) return `<span class="text-emerald-300">${str}</span>`;
+      if (num) return `<span class="text-amber-300">${num}</span>`;
+      if (bool) return `<span class="text-cyan-300">${bool}</span>`;
+      return match;
+    },
+  );
+}
+
+/* ==========================================================
+   COPY BUTTON — micro component
+   ========================================================== */
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  };
+  if (!text) return null;
+  return (
+    <button
+      onClick={handleCopy}
+      className="ml-auto flex-shrink-0 rounded p-0.5 text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-colors"
+      aria-label="Copy"
+    >
+      {copied ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+    </button>
+  );
+}
+
+/* ==========================================================
+   REASONING — enhanced with pulse + emerald glow
+   - auto-expand during streaming (isRunning=true)
+   - pulsing emerald glow border on content when streaming
+   - animate-pulse on Brain icon during streaming
+   ========================================================== */
+export function JarvisReasoningView({
+  text,
+  isRunning,
+}: {
+  text: string;
+  isRunning?: boolean;
+}) {
+  const [open, setOpen] = useState(!!isRunning);
+  const running = isRunning ?? false;
+
+  useEffect(() => {
+    if (running) setOpen(true);
+    else {
+      // Auto-collapse after a short delay when done
+      const t = setTimeout(() => setOpen(false), 800);
+      return () => clearTimeout(t);
+    }
+  }, [running]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 2 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18 }}
+    >
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger className="flex items-center gap-1.5 py-0.5 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors">
+          <Brain
+            className={cn("size-3", running && "animate-pulse text-emerald-400")}
+          />
+          <span className="italic">{running ? "Thinking…" : "Reasoning"}</span>
+          <ChevronDown
+            className={cn(
+              "size-3 transition-transform duration-200",
+              open ? "rotate-0" : "-rotate-90",
+            )}
+          />
+          {running && (
+            <span className="ml-1 inline-flex gap-0.5">
+              <span className="size-1 rounded-full bg-emerald-400 animate-bounce [animation-delay:0ms]" />
+              <span className="size-1 rounded-full bg-emerald-400 animate-bounce [animation-delay:150ms]" />
+              <span className="size-1 rounded-full bg-emerald-400 animate-bounce [animation-delay:300ms]" />
+            </span>
+          )}
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div
+            className={cn(
+              "mt-1 rounded-md border px-3 py-2 text-xs text-zinc-400 italic leading-relaxed whitespace-pre-wrap transition-all",
+              running
+                ? "border-emerald-500/30 bg-emerald-500/[0.03] ring-1 ring-emerald-500/20 animate-pulse"
+                : "border-zinc-800/50 bg-zinc-900/50",
+            )}
+          >
+            {text}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </motion.div>
+  );
+}
+export const JarvisReasoning = JarvisReasoningView as unknown as ReasoningMessagePartComponent;
+
+/* ==========================================================
+   TOOL CALL — COMPACT inline card (enhanced)
+   - gradient border during execution
+   - "Completed in Xs" timing display
+   - Copy button on args + result
+   - JSON syntax coloring on result
+   - Uses Huashu palette: emerald=done, amber=running, red=err, sky=action
+   ========================================================== */
+
+type SimpleStatus = "running" | "complete" | "incomplete" | "requires-action";
+
+const statusMeta: Record<
+  SimpleStatus,
+  { icon: React.ElementType; color: string; ring: string; label: string }
+> = {
+  running: {
+    icon: Loader2,
+    color: "text-amber-400",
+    ring: "ring-amber-500/30 bg-amber-500/[0.06]",
+    label: "Running",
+  },
+  complete: {
+    icon: CheckCircle2,
+    color: "text-emerald-400",
+    ring: "ring-emerald-500/25 bg-emerald-500/[0.05]",
+    label: "Done",
+  },
+  incomplete: {
+    icon: XCircle,
+    color: "text-red-400",
+    ring: "ring-red-500/30 bg-red-500/[0.06]",
+    label: "Error",
+  },
+  "requires-action": {
+    icon: AlertCircle,
+    color: "text-sky-400",
+    ring: "ring-sky-500/30 bg-sky-500/[0.06]",
+    label: "Action",
+  },
+};
+
+function summarizeArgs(args: any, max = 50): string {
+  if (!args) return "";
+  if (typeof args === "string") return args.slice(0, max);
+  try {
+    const keys = Object.keys(args);
+    if (keys.length === 0) return "";
+    const pairs = keys.slice(0, 2).map((k) => {
+      const v = args[k];
+      const vStr =
+        typeof v === "string"
+          ? `"${v.slice(0, 20)}"`
+          : JSON.stringify(v).slice(0, 25);
+      return `${k}=${vStr}`;
+    });
+    let s = pairs.join(" ");
+    if (keys.length > 2) s += ` +${keys.length - 2}`;
+    return s.length > max ? s.slice(0, max - 1) + "…" : s;
+  } catch {
+    return "";
+  }
+}
+
+function formatElapsed(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${Math.floor(ms / 60_000)}m ${Math.round((ms % 60_000) / 1000)}s`;
+}
+
+export function JarvisToolCallView({
+  toolName,
+  args,
+  argsText,
+  result,
+  status,
+}: {
+  toolName: string;
+  args?: Record<string, any>;
+  argsText?: string;
+  result?: any;
+  status: { type: SimpleStatus } | SimpleStatus;
+}) {
+  const sType: SimpleStatus =
+    typeof status === "string" ? status : status?.type ?? "complete";
+  const meta = statusMeta[sType];
+  const Icon = meta.icon;
+  const isRunning = sType === "running";
+
+  // Timing
+  const startTimeRef = useRef<number | null>(null);
+  const [elapsed, setElapsed] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isRunning && startTimeRef.current === null) {
+      startTimeRef.current = Date.now();
+    }
+    if (!isRunning && startTimeRef.current !== null && elapsed === null) {
+      setElapsed(Date.now() - startTimeRef.current);
+    }
+  }, [isRunning, elapsed]);
+
+  // Open by default while running. Auto-collapses on done.
+  const [open, setOpen] = useState(isRunning);
+  useEffect(() => {
+    if (!isRunning) {
+      const t = setTimeout(() => setOpen(false), 600);
+      return () => clearTimeout(t);
+    }
+    setOpen(true);
+  }, [isRunning]);
+
+  const argSummary = summarizeArgs(args);
+  const cleanName = toolName
+    .replace(/^mcp__base44_tools__/, "")
+    .replace(/^mcp__/, "");
+
+  const argsStr = args
+    ? JSON.stringify(args, null, 2)
+    : argsText || "";
+  const resultStr =
+    result !== undefined && result !== null
+      ? typeof result === "string"
+        ? result.slice(0, 2000)
+        : JSON.stringify(result, null, 2).slice(0, 2000)
+      : "";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 3 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className={cn(
+        "rounded-lg ring-1 transition-all relative overflow-hidden",
+        meta.ring,
+        isRunning &&
+          "before:absolute before:inset-0 before:rounded-lg before:bg-gradient-to-r before:from-emerald-500/10 before:to-cyan-500/10 before:animate-pulse",
+      )}
+    >
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-white/[0.02] transition-colors rounded-lg">
+          <Icon
+            className={cn(
+              "size-3.5 flex-shrink-0",
+              meta.color,
+              isRunning && "animate-spin",
+            )}
+          />
+          <Wrench className="size-3 text-zinc-500 flex-shrink-0" />
+          <span className="text-xs font-mono text-zinc-200 truncate">
+            {cleanName}
+          </span>
+          {argSummary && (
+            <span className="text-[10px] font-mono text-zinc-500 truncate flex-1">
+              {argSummary}
+            </span>
+          )}
+          <span
+            className={cn(
+              "text-[10px] uppercase tracking-wider flex-shrink-0 flex items-center gap-1",
+              meta.color,
+            )}
+          >
+            {!isRunning && sType === "complete" && elapsed !== null
+              ? `Done in ${formatElapsed(elapsed)}`
+              : meta.label}
+          </span>
+          <ChevronDown
+            className={cn(
+              "size-3 text-zinc-500 transition-transform duration-200 flex-shrink-0",
+              open ? "rotate-0" : "-rotate-90",
+            )}
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="px-2.5 pb-2 space-y-1.5">
+            {(args || argsText) && (
+              <div>
+                <div className="flex items-center gap-1 mb-0.5">
+                  <div className="text-[9px] uppercase tracking-wider text-zinc-600">
+                    args
+                  </div>
+                  <CopyButton text={argsStr} />
+                </div>
+                <pre className="text-[10px] font-mono text-zinc-400 bg-zinc-950/80 rounded p-2 overflow-x-auto max-h-32 leading-relaxed">
+                  {argsStr}
+                </pre>
+              </div>
+            )}
+            {result !== undefined && result !== null && (
+              <div>
+                <div className="flex items-center gap-1 mb-0.5">
+                  <div className="text-[9px] uppercase tracking-wider text-zinc-600">
+                    result
+                  </div>
+                  <CopyButton text={resultStr} />
+                </div>
+                <div
+                  className="text-[10px] font-mono text-zinc-400 bg-zinc-950/80 rounded p-2 overflow-y-auto max-h-48 leading-relaxed whitespace-pre-wrap"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      typeof result === "string"
+                        ? resultStr
+                        : jsonSyntaxHighlight(resultStr),
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </motion.div>
+  );
+}
+export const JarvisToolCall = JarvisToolCallView as unknown as ToolCallMessagePartComponent;
+
+/* ==========================================================
+   GROUP — wraps a series of tool calls + reasoning in a compact strip
+   ========================================================== */
+export function JarvisToolStrip({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="my-2 space-y-1 border-l-2 border-zinc-800/50 pl-2.5">
+      {children}
+    </div>
+  );
+}
+
+/* ==========================================================
+   TEXT — wraps streamed text with typewriter cursor + fade-in
+   Uses JarvisStreamingText for cursor animation
+   ========================================================== */
+import { TextMessagePartComponent } from "@assistant-ui/react";
+
+export const JarvisText: TextMessagePartComponent = ({ text }) => {
+  return (
+    <JarvisStreamingText text={text} />
+  );
+};

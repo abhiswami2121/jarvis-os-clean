@@ -1,0 +1,55 @@
+"use client";
+
+import React from "react";
+import { useAuiState } from "@assistant-ui/react";
+import { useReducedMotion } from "motion/react";
+
+/**
+ * ChatAurora — Northern Lights ambient backdrop bound to thread.isRunning.
+ *
+ * When the agent loop is active, the aurora intensifies (opacity 0.05 → 0.30,
+ * scale 0.95 → 1.0) with two animated mesh blobs. When idle, it dims to a
+ * subtle ambient glow. Provides visual confidence that the agent is still working
+ * during long-running missions.
+ *
+ * Wrap the chat container ONLY — not the entire layout (don't pulse dashboard).
+ */
+export const ChatAurora: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isRunning = useAuiState((s) => s.thread.isRunning);
+  const reducedMotion = useReducedMotion();
+  const animate = isRunning && !reducedMotion;
+
+  return (
+    <>
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {isRunning ? "Agent is thinking and processing your request." : ""}
+      </div>
+    <div className="relative w-full h-full overflow-hidden">
+      {/* Aurora mesh layer */}
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-0 transition-all duration-1000 ease-in-out ${
+          isRunning
+            ? "opacity-30 scale-100"
+            : "opacity-[0.04] scale-95 blur-xl"
+        }`}
+      >
+        <div
+          className="absolute -top-[20%] -left-[10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-teal-500 via-indigo-500 to-purple-600 blur-[120px] mix-blend-screen animate-aurora-shift"
+        />
+        <div
+          className="absolute -bottom-[20%] -right-[10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-fuchsia-600 via-sky-500 to-emerald-400 blur-[100px] mix-blend-screen animate-aurora-shift"
+          style={{ animationDelay: "-9s", animationDirection: "reverse" }}
+        />
+      </div>
+
+      {/* Content wrapper */}
+      <div className="relative z-10 w-full h-full">{children}</div>
+    </div>
+    </>
+  );
+};

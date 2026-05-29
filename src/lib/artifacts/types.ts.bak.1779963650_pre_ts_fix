@@ -1,0 +1,159 @@
+import { z } from "zod";
+
+// ── Column Definition ──────────────────────────────────────────
+export const ColumnDefSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  type: z.enum(["string", "number", "currency", "date", "status"]).optional(),
+  sortable: z.boolean().optional(),
+  format: z.string().optional(), // e.g. "MMM DD, YYYY" for dates
+});
+
+export type ColumnDef = z.infer<typeof ColumnDefSchema>;
+
+// ── Action Button ──────────────────────────────────────────────
+export const ActionButtonSchema = z.object({
+  label: z.string(),
+  intent: z.string(),
+  payload: z.any().optional(),
+  variant: z.enum(["primary", "secondary", "danger"]).optional(),
+  requiresConfirm: z.boolean().optional(),
+  confirmMessage: z.string().optional(),
+});
+
+export type ActionButton = z.infer<typeof ActionButtonSchema>;
+
+// ── Metric Tile ────────────────────────────────────────────────
+export const MetricTileSchema = z.object({
+  label: z.string(),
+  value: z.union([z.string(), z.number()]),
+  trend: z.enum(["up", "down", "flat"]).optional(),
+  trendValue: z.string().optional(),
+  format: z.enum(["currency", "number", "percent", "string"]).optional().default("string"),
+});
+
+export type MetricTile = z.infer<typeof MetricTileSchema>;
+
+// ── Data Table Artifact ────────────────────────────────────────
+export const DataTableArtifactSchema = z.object({
+  type: z.literal("data_table"),
+  title: z.string(),
+  subtitle: z.string().optional(),
+  columns: z.array(ColumnDefSchema),
+  rows: z.array(z.record(z.string(), z.any())),
+  actions: z.array(ActionButtonSchema).optional(),
+  metadata: z
+    .object({
+      totalRows: z.number().optional(),
+      truncated: z.boolean().optional(),
+      source: z.string().optional(),
+      timestamp: z.string().optional(),
+    })
+    .optional(),
+});
+
+export type DataTableArtifact = z.infer<typeof DataTableArtifactSchema>;
+
+// ── Chart Artifact ─────────────────────────────────────────────
+export const ChartArtifactSchema = z.object({
+  type: z.literal("chart"),
+  title: z.string(),
+  chartType: z.enum(["line", "bar", "pie"]),
+  data: z.array(z.record(z.string(), z.any())),
+  axisLabels: z
+    .object({
+      x: z.string().optional(),
+      y: z.string().optional(),
+    })
+    .optional(),
+  subtitle: z.string().optional(),
+});
+
+export type ChartArtifact = z.infer<typeof ChartArtifactSchema>;
+
+// ── Action Panel Artifact ──────────────────────────────────────
+export const ActionPanelArtifactSchema = z.object({
+  type: z.literal("action_panel"),
+  title: z.string(),
+  description: z.string(),
+  actions: z.array(ActionButtonSchema),
+  severity: z.enum(["info", "warning", "critical"]).optional().default("info"),
+});
+
+export type ActionPanelArtifact = z.infer<typeof ActionPanelArtifactSchema>;
+
+// ── Status Card Artifact ───────────────────────────────────────
+export const StatusCardArtifactSchema = z.object({
+  type: z.literal("status_card"),
+  title: z.string(),
+  status: z.enum(["healthy", "warning", "critical", "unknown"]).default("unknown"),
+  metrics: z.array(MetricTileSchema),
+});
+
+export type StatusCardArtifact = z.infer<typeof StatusCardArtifactSchema>;
+
+// ── Union Type ─────────────────────────────────────────────────
+export const ArtifactSchema = z.discriminatedUnion("type", [
+  DataTableArtifactSchema,
+  ChartArtifactSchema,
+  ActionPanelArtifactSchema,
+  StatusCardArtifactSchema,
+]);
+
+
+
+// PRD May 27 — Slack Canvas artifact (out-of-flow expandable module)
+export const SlackCanvasArtifactSchema = z.object({
+  type: z.literal("slack_canvas"),
+  title: z.string(),
+  channel: z.string().optional(),
+  permalink: z.string().url().optional(),
+  canvas_id: z.string().optional(),
+  markdown_preview: z.string().optional(),
+});
+export type SlackCanvasArtifact = z.infer<typeof SlackCanvasArtifactSchema>;
+
+export type Artifact = z.infer<typeof ArtifactSchema> | SlackCanvasArtifact;
+
+// ── Parser Result ──────────────────────────────────────────────
+export interface ParseResult {
+  cleanText: string;
+  artifacts: Artifact[];
+  errors: string[];
+}
+
+// ── Artifact block delimiters ──────────────────────────────────
+export const ARTIFACT_START_PREFIX = "[[ARTIFACT_START:";
+export const ARTIFACT_END = "[[ARTIFACT_END]]";
+
+/**
+ * Try to parse a raw artifact payload into a validated Artifact.
+ * Returns the artifact or null with an error string.
+ */
+export function validateArtifact(raw: unknown): { artifact: Artifact | null; error?: string } {
+  try {
+    const artifact = ArtifactSchema.parse(raw) as Artifact;
+    return { artifact };
+  } catch (err: any) {
+    const message = err?.message || String(err);
+    return { artifact: null, error: message };
+  }
+}
+
+// ── Error Recovery Artifact (Wave 2: Context Overflow + Circuit Breaker) ──
+export const ErrorRecoveryArtifactSchema = z.object({
+  type: z.literal("error_recovery"),
+  title: z.string(),
+  errorType: z.enum(["context_overflow", "circuit_breaker", "tool_failure", "timeout", "network", "generic"]),
+  message: z.string(),
+  detail: z.string().optional(),
+  failingTool: z.string().optional(),
+  failureCount: z.number().optional(),
+  actions: z.array(z.object({
+    id: z.string(),
+    label: z.string(),
+    intent: z.enum(["clear_history", "new_branch", "retry", "abort", "escalate", "contact_support"]),
+    variant: z.enum(["primary", "secondary", "danger"]).optional(),
+  })).default([]),
+});
+export type ErrorRecoveryArtifact = z.infer<typeof ErrorRecoveryArtifactSchema>;

@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Jarvis OS — Orchestration Mind Map</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+:root {
+  --bg-base: #06060d;
+  --bg-card: rgba(255,255,255,0.03);
+  --border-glass: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.10);
+  --text-primary: #f0f0f5;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #6b6b7b;
+  --aurora-blue: #4F8BFF;
+  --aurora-purple: #A855F7;
+  --aurora-pink: #EC4899;
+  --aurora-amber: #FBBF24;
+  --aurora-emerald: #10D9A0;
+  --aurora-cyan: #06D9F0;
+  --aurora-rose: #FB7185;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Inter Display', 'Inter', 'SF Pro Display', system-ui, -apple-system, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Background aurora ── */
+.aurora-bg {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(79,139,255,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 70% at 80% 70%, rgba(168,85,247,0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(16,217,160,0.03) 0%, transparent 60%);
+}
+
+/* ── Glass panels ── */
+.glass-panel {
+  background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
+}
+
+/* ── Header ── */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(180deg, rgba(6,6,13,0.95) 60%, rgba(6,6,13,0) 100%);
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo-ring {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--aurora-purple), var(--aurora-cyan));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: #fff;
+}
+.header-title { font-size: 16px; font-weight: 600; }
+.header-subtitle { font-size: 11px; color: var(--text-tertiary); font-weight: 400; }
+
+.header-metrics { display: flex; gap: 20px; }
+.metric-item { text-align: center; }
+.metric-value { font-size: 20px; font-weight: 700; }
+.metric-value.blue { color: var(--aurora-blue); }
+.metric-value.purple { color: var(--aurora-purple); }
+.metric-value.emerald { color: var(--aurora-emerald); }
+.metric-label { font-size: 9px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ── SVG Canvas ── */
+#mind-map { position: fixed; inset: 0; z-index: 1; cursor: grab; }
+#mind-map:active { cursor: grabbing; }
+
+/* ── Legend ── */
+.legend {
+  position: fixed; bottom: 20px; right: 20px; z-index: 100;
+  padding: 14px 18px; font-size: 11px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.legend-row { display: flex; align-items: center; gap: 8px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Search ── */
+.search-wrap {
+  position: fixed; top: 90px; left: 50%; transform: translateX(-50%); z-index: 100;
+}
+.search-input {
+  width: 320px; padding: 10px 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 13px; outline: none;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: border-color 0.2s;
+}
+.search-input:focus { border-color: var(--aurora-purple); }
+.search-input::placeholder { color: var(--text-tertiary); }
+
+/* ── Tooltip ── */
+.tooltip {
+  position: fixed; pointer-events: none; z-index: 200;
+  padding: 12px 16px; max-width: 280px;
+  font-size: 12px; line-height: 1.5;
+  opacity: 0; transition: opacity 0.15s;
+}
+.tooltip.show { opacity: 1; }
+.tooltip-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.tooltip-desc { color: var(--text-secondary); font-size: 11px; }
+.tooltip-meta { color: var(--text-tertiary); font-size: 10px; margin-top: 4px; }
+
+/* ── Node styles (applied via D3) ── */
+.node-label { font-size: 11px; fill: var(--text-secondary); pointer-events: none; text-anchor: middle; }
+.node-label.root { font-size: 13px; fill: var(--text-primary); font-weight: 600; }
+.node-label.category { font-size: 12px; fill: var(--text-primary); font-weight: 500; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .header-metrics { display: none; }
+  .search-input { width: 240px; }
+  .legend { bottom: 10px; right: 10px; padding: 10px 14px; font-size: 10px; }
+}
+</style>
+</head>
+<body>
+
+<div class="aurora-bg"></div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-ring">J</div>
+    <div>
+      <div class="header-title">Jarvis OS — Orchestration Mind Map</div>
+      <div class="header-subtitle">Interactive graph • Scroll to zoom • Drag to pan • Click nodes to expand</div>
+    </div>
+  </div>
+  <div class="header-metrics">
+    <div class="metric-item"><div class="metric-value blue">189</div><div class="metric-label">Skills</div></div>
+    <div class="metric-item"><div class="metric-value purple">4</div><div class="metric-label">Agents</div></div>
+    <div class="metric-item"><div class="metric-value emerald">30+</div><div class="metric-label">Playbooks</div></div>
+    <div class="metric-item" style="color:var(--aurora-pink)"><div class="metric-value" style="color:var(--aurora-pink)">25K+</div><div class="metric-label">Graph Nodes</div></div>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="search-wrap">
+  <input class="search-input" id="search" placeholder="🔍  Search nodes — agents, skills, tools, entities..." autocomplete="off" />
+</div>
+
+<!-- Legend -->
+<div class="legend glass-panel">
+  <div class="legend-row"><div class="legend-dot" style="background:var(--aurora-purple)"></div> Agent</div>
+  <div class="legend-row"><div class="legend-dot" style="background:var(--aurora-blue)"></div> Skill Domain</div>
+  <div class="legend-row"><div class="legend-dot" style="background:var(--aurora-emerald)"></div> Playbook</div>
+  <div class="legend-row"><div class="legend-dot" style="background:var(--aurora-amber)"></div> Infrastructure</div>
+  <div class="legend-row"><div class="legend-dot" style="background:var(--aurora-cyan)"></div> Data / Knowledge</div>
+  <div class="legend-row"><div class="legend-dot" style="background:var(--aurora-pink)"></div> Tool / Bridge</div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip glass-panel" id="tooltip">
+  <div class="tooltip-title" id="tt-title"></div>
+  <div class="tooltip-desc" id="tt-desc"></div>
+  <div class="tooltip-meta" id="tt-meta"></div>
+</div>
+
+<!-- SVG -->
+<svg id="mind-map"></svg>
+
+<script>
+// ── DATA: Jarvis OS Orchestration Graph ──────────────────────────
+const data = {
+  name: "JARVIS OS",
+  color: "#A855F7",
+  size: 28,
+  desc: "NewLeaf Financial Operations Command Center — AI-native CRM agent",
+  meta: "189 skills • 4 agents • 30+ playbooks • 25K+ knowledge graph nodes",
+  children: [
+    {
+      name: "AGENTS",
+      color: "#A855F7",
+      size: 20,
+      desc: "Autonomous agent squad — each with specialized domain expertise",
+      meta: "4 agents • 24/7 operation",
+      children: [
+        { name: "Billing Agent", color: "#A855F7", size: 16, desc: "Charges, refunds, subscription changes, date adjustments, recovery, dunning. Loads billing-imperatives.md before any money movement.", meta: "Tier: CRITICAL • Never auto-cancels" },
+        { name: "Recovery Agent", color: "#A855F7", size: 16, desc: "Manages declined payment recovery pipeline. Smart retry scheduling, dunning email escalation, billing link generation, payroll heuristics.", meta: "Goal: recover failed payments" },
+        { name: "Hygiene Agent", color: "#A855F7", size: 16, desc: "Runs 15-point data quality checks every 2 hours. Detects CRM/NMI mismatches, orphaned records, expired cards, stale data.", meta: "Auto-fixes safe issues • Flags dangerous ones" },
+        { name: "Hermes", color: "#A855F7", size: 16, desc: "NewLeaf VPS persistent operations brain. Watches payments, runs data hygiene, manages billing automations, generates content.", meta: "Autonomous ops engine • Dream mode" }
+      ]
+    },
+    {
+      name: "SKILLS (189)",
+      color: "#4F8BFF",
+      size: 20,
+      desc: "Domain-specific playbooks auto-loaded based on intent matching via cortex router",
+      meta: "189 skills • 6 categories",
+      children: [
+        {
+          name: "Billing & Payments",
+          color: "#4F8BFF",
+          size: 14,
+          desc: "billing-imperatives, billing-laws, payment-flow-playbook, mit-charge-protocol, golden-vault-payment-master, nmi-charge-decision-tree, recovery-final-check-protocol, billing-recon-action-framework, pre-payment-cancellation-guard, billing-cof-flags-canonical, collect-checkout-product-catalog",
+          meta: "20+ skills • NEVER skip billing-imperatives"
+        },
+        {
+          name: "MCP & Deploy",
+          color: "#4F8BFF",
+          size: 14,
+          desc: "mcp-edit-execution, mcp-edit-error-handling, mcp-edit-orchestration, mcp-edit-lessons-learned, mcp-edit-prd-driven, base44-deploy-pipeline-mastery, base44-publish-api, vercel-deploy-discipline, github-first-development, lane-b-end-to-end-mastery",
+          meta: "15+ skills • 2 deploy lanes (A: MCP, B: GitHub)"
+        },
+        {
+          name: "Customer Operations",
+          color: "#4F8BFF",
+          size: 14,
+          desc: "master-customer-operations, enrollment-lifecycle, customer-360, dispute-workflow, credit-dispute, onboarding-qc, client-financial-review, recovery-communication-chargeback-defense",
+          meta: "10+ skills • Enrollment, Disputes, Reviews"
+        },
+        {
+          name: "VPS & Infrastructure",
+          color: "#4F8BFF",
+          size: 14,
+          desc: "hermes-vps-mastery, vps-architecture-wiki, vps-mission-orchestration-laws, hostinger-mcp-integration, cloudflare-bypass-streaming-architecture, definitive-cloudflare-fix-architecture, rate-limit-mitigation, safe-self-restart-protocol",
+          meta: "10+ skills • VPS control, DNS, bypass infra"
+        },
+        {
+          name: "AI & Orchestration",
+          color: "#4F8BFF",
+          size: 14,
+          desc: "k26-swarm-autonomous-engine, model-orchestration-architecture, runtime-routing-deepseek-orchestrator, autonomous-agent-workflow-map, mission-prompt-hardening, autonomous-coding-loop, dream-mode-self-healing, process-retrospective-deep-analysis",
+          meta: "20+ skills • Kimi, DeepSeek, Claude SDK"
+        },
+        {
+          name: "Communications & Slack",
+          color: "#4F8BFF",
+          size: 14,
+          desc: "connector-slack-mastery, slack-canvas-mastery, slack-synthesis-pipeline, auto-slack-on-deploy, master-communications, ghl-campaign-mastery, vapi-haley-flow",
+          meta: "7+ skills • Slack, GHL, VAPI, Email"
+        }
+      ]
+    },
+    {
+      name: "PLAYBOOKS (30+)",
+      color: "#10D9A0",
+      size: 18,
+      desc: "Standard operating procedures for common operational workflows",
+      meta: "30+ playbooks • Regex-triggered auto-load",
+      children: [
+        { name: "action-safety", color: "#10D9A0", size: 12, desc: "TIER MATRIX: read-only (auto), sensitive (HITL), billing (dual auth). Loaded EVERY session.", meta: "Non-negotiable" },
+        { name: "billing-recovery", color: "#10D9A0", size: 12, desc: "Trigger: /billing|payment|decline|failed charge|nsf|recovery/i. Full recovery pipeline.", meta: "Payment failures" },
+        { name: "customer-360", color: "#10D9A0", size: 12, desc: "Trigger: /customer 360|full audit|investigate/i. Complete customer dossier.", meta: "Cross-system lookup" },
+        { name: "credit-dispute", color: "#10D9A0", size: 12, desc: "Trigger: dispute, letter, negative item, challenge, bureau. Credit restoration workflow.", meta: "Equifax, TransUnion, Experian" },
+        { name: "enrollment-lifecycle", color: "#10D9A0", size: 12, desc: "Trigger: /enroll|enrollment|activate|onboard|new customer/i. Full enrollment pipeline.", meta: "Lead → Pipeline → Enrolled" },
+        { name: "daily-report", color: "#10D9A0", size: 12, desc: "Trigger: daily report, morning brief, what happened today. Daily ops summary.", meta: "Submissions, payments, calls" },
+        { name: "billing-forensics-audit", color: "#10D9A0", size: 12, desc: "Trigger: /billing forensic|decline audit|cof audit/i. Deep billing investigation.", meta: "Compliance verification" },
+        { name: "data-query-intelligence", color: "#10D9A0", size: 12, desc: "Master reference for querying NewLeaf data correctly. Every entity has quirks.", meta: "Prevents wrong answers" }
+      ]
+    },
+    {
+      name: "RULES (5)",
+      color: "#FB7185",
+      size: 16,
+      desc: "Immutable cardinal rules loaded at session start. Cannot be violated.",
+      meta: "5 rules • System-level enforcement",
+      children: [
+        { name: "billing.md", color: "#FB7185", size: 12, desc: "Path-scoped rules for any billing action. NEVER charge without loading billing-imperatives.", meta: "CRITICAL" },
+        { name: "enrollment.md", color: "#FB7185", size: 12, desc: "NOT enrolled until agent submitted them. Pipeline vs Enrolled vs Lead tiers.", meta: "Immutable" },
+        { name: "communications.md", color: "#FB7185", size: 12, desc: "Direct integration imperatives. Never use banned integrations.", meta: "Core.SendEmail = FORBIDDEN" },
+        { name: "execution-momentum.md", color: "#FB7185", size: 12, desc: "ALWAYS continue. Never blank out. Behavioral rule, not a skill.", meta: "Behavioral" }
+      ]
+    },
+    {
+      name: "INFRASTRUCTURE",
+      color: "#FBBF24",
+      size: 18,
+      desc: "The hardware and services powering Jarvis OS",
+      meta: "VPS + MCP + 5 bridges",
+      children: [
+        { name: "VPS (Hostinger)", color: "#FBBF24", size: 14, desc: "187.127.250.171 • claude-agent-api PM2 • DeepSeek V4 Pro primary • Kimi K2.6 secondary", meta: "Canvas v5 • Dream Engine • Cron jobs" },
+        { name: "Base44 CRM", color: "#FBBF24", size: 14, desc: "api.base44.app • 90+ entities • 200+ backend functions • NewLeafBridge SDK", meta: "MongoDB-style queries • MCP edit deploy" },
+        { name: "NMI Gateway", color: "#FBBF24", size: 14, desc: "Allied Payments • nmiMcpBridge • charge/refund/void/vault/subscription", meta: "CoF compliant • CIT + MIT flows" },
+        { name: "Vercel UI", color: "#FBBF24", size: 14, desc: "jarvis-os-iota.vercel.app • jarvis-os-clean repo • React 19 + Next.js 15 + assistant-ui", meta: "Spatial Glass aesthetic" },
+        { name: "Slack Workspace", color: "#FBBF24", size: 14, desc: "slackMcpBridge • #jarvis-admin • Bot + User tokens • Canvas API", meta: "Real-time notifications" },
+        { name: "VAPI (Haley)", color: "#FBBF24", size: 14, desc: "Voice AI agent • vapiMcpBridge • Call transfers to agents • Webhook pipeline", meta: "Inbound calls + lead capture" }
+      ]
+    },
+    {
+      name: "KNOWLEDGE GRAPHS",
+      color: "#06D9F0",
+      size: 18,
+      desc: "Three code/knowledge graphs powering semantic search and context retrieval",
+      meta: "25K+ nodes total • Auto-rebuild cycles",
+      children: [
+        { name: "GRAPH-CORTEX", color: "#06D9F0", size: 14, desc: "4,283 nodes • PRDs + skills + memory + playbooks. Auto-rebuilds every 15min.", meta: "query_cortex_graph() • search/node/neighbors/report" },
+        { name: "GRAPH-CODE", color: "#06D9F0", size: 14, desc: "20K nodes • newleaf-financial repo. Hourly rebuild. Find existing functions before building.", meta: "query_code_graph() • File paths + symbols" },
+        { name: "GRAPH-BRAIN", color: "#06D9F0", size: 14, desc: "1K nodes • VPS infrastructure code. Every 6h rebuild.", meta: "VPS code graph" }
+      ]
+    },
+    {
+      name: "DATA WAREHOUSE",
+      color: "#06D9F0",
+      size: 16,
+      desc: "Local SQLite knowledge warehouse for historical analysis",
+      meta: "22 tables • 50K+ records",
+      children: [
+        { name: "newleaf_360.db", color: "#06D9F0", size: 14, desc: "Slack messages, SMS, emails, NMI transactions, payment logs, support tickets, recovery items, customer profiles, dispute rounds, credit reports.", meta: "query_warehouse(table, where, limit) • READ-ONLY" },
+        { name: "ChromaDB", color: "#06D9F0", size: 12, desc: "agent_knowledge collection for billing/payment domain expertise.", meta: "Vector search" }
+      ]
+    },
+    {
+      name: "TOOLBELT",
+      color: "#EC4899",
+      size: 18,
+      desc: "The complete tool inventory available for operational execution",
+      meta: "20+ MCP tools • Base44 + VPS combined",
+      children: [
+        { name: "b44_query / b44_count", color: "#EC4899", size: 13, desc: "MongoDB-style entity queries. Paginated. fetchAll for full datasets.", meta: "90+ entities queryable" },
+        { name: "b44_create / b44_update", color: "#EC4899", size: 13, desc: "Create or patch entity records. Partial updates supported.", meta: "Write operations" },
+        { name: "b44_invoke", color: "#EC4899", size: 13, desc: "Call ANY of 200+ backend functions: nmiMcpBridge, slackMcpBridge, reportingHubQuery, jarvisTaskManager.", meta: "Function gateway" },
+        { name: "nmi_mcp_bridge", color: "#EC4899", size: 13, desc: "charge, refund, void, vault_create, vault_update, subscription_create, subscription_cancel, transaction_query.", meta: "Payment operations" },
+        { name: "slack_mcp_bridge", color: "#EC4899", size: 13, desc: "post_message, post_thread, get_channel_history, get_user_info, react, update_message.", meta: "Slack integration" },
+        { name: "reporting_hub", color: "#EC4899", size: 13, desc: "overview, enrollments, lead_flow, billing, communications, calls, agents, support, automations, morning_pulse, customer_360.", meta: "12+ report actions" },
+        { name: "cross_system_lookup", color: "#EC4899", size: 13, desc: "AGI SUPERPOWER: Full customer 360 in ONE call. Auto-detects phone/email/vault/customer_id.", meta: "4 identifier types" },
+        { name: "query_warehouse / query_cortex_graph / query_code_graph", color: "#EC4899", size: 13, desc: "Historical data + knowledge graph semantic search. 3 query tools for deep context.", meta: "Knowledge layer" },
+        { name: "jarvis_fs", color: "#EC4899", size: 13, desc: "Read/write cortex skills, PRDs, memory files. fs_read, fs_write, fs_list, fs_search.", meta: "Cortex file system" },
+        { name: "session_deposit / rc_add_item", color: "#EC4899", size: 13, desc: "Cross-turn persistence. Session vault + rolling context buffer.", meta: "Memory layer" }
+      ]
+    }
+  ]
+};
+
+// ── D3 Force Graph ────────────────────────────────────────────────
+const svg = d3.select("#mind-map");
+const width = window.innerWidth;
+const height = window.innerHeight;
+svg.attr("viewBox", [0, 0, width, height]);
+
+const g = svg.append("g");
+
+// Zoom
+const zoom = d3.zoom()
+  .scaleExtent([0.15, 4])
+  .on("zoom", (event) => { g.attr("transform", event.transform); });
+svg.call(zoom);
+// Initial zoom to center
+svg.call(zoom.transform, d3.zoomIdentity.translate(width/2, height/2).scale(0.55));
+
+// ── Flatten to nodes + links ──
+const nodes = [];
+const links = [];
+const nodeMap = new Map();
+
+function flatten(root, parentId = null, depth = 0) {
+  const id = root.name.replace(/\s+/g, '_');
+  const node = { id, name: root.name, color: root.color, size: root.size, desc: root.desc || '', meta: root.meta || '', depth, parentId, collapsed: depth > 0 && depth < 2 ? false : undefined };
+  nodes.push(node);
+  nodeMap.set(id, node);
+  if (parentId !== null) links.push({ source: parentId, target: id });
+  if (root.children && !node.collapsed) {
+    root.children.forEach(c => flatten(c, id, depth + 1));
+  }
+}
+flatten(data);
+
+// ── Simulation ──
+const simulation = d3.forceSimulation(nodes)
+  .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
+    const s = nodeMap.get(d.source.id || d.source);
+    const t = nodeMap.get(d.target.id || d.target);
+    const depthDiff = Math.abs((t?.depth || 0) - (s?.depth || 0));
+    return 60 + depthDiff * 50;
+  }).strength(0.4))
+  .force("charge", d3.forceManyBody().strength(d => -120 - d.depth * 40))
+  .force("center", d3.forceCenter(0, 0))
+  .force("collide", d3.forceCollide(d => d.size + 8))
+  .force("x", d3.forceX(d => (d.depth - 1.5) * 160).strength(0.3))
+  .force("y", d3.forceY(0).strength(0.05));
+
+// ── Draw links ──
+const link = g.append("g")
+  .attr("stroke", "rgba(255,255,255,0.08)")
+  .attr("stroke-width", 1.2)
+  .selectAll("line")
+  .data(links)
+  .join("line");
+
+// ── Draw nodes ──
+const node = g.append("g")
+  .selectAll("g")
+  .data(nodes)
+  .join("g")
+  .attr("cursor", "pointer")
+  .call(d3.drag()
+    .on("start", (event, d) => { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+    .on("drag", (event, d) => { d.fx = event.x; d.fy = event.y; })
+    .on("end", (event, d) => { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+  );
+
+// Node circles with glow
+node.append("circle")
+  .attr("r", d => d.size)
+  .attr("fill", d => d.color)
+  .attr("fill-opacity", 0.15)
+  .attr("stroke", d => d.color)
+  .attr("stroke-width", 1.5)
+  .attr("stroke-opacity", 0.4);
+
+// Inner circle
+node.append("circle")
+  .attr("r", d => d.size * 0.55)
+  .attr("fill", d => d.color)
+  .attr("fill-opacity", 0.9);
+
+// Labels
+node.append("text")
+  .text(d => d.name)
+  .attr("class", d => d.depth === 0 ? "node-label root" : d.depth === 1 ? "node-label category" : "node-label")
+  .attr("dy", d => d.size + 14)
+  .attr("text-anchor", "middle")
+  .style("font-size", d => d.depth === 0 ? "14px" : d.depth === 1 ? "12px" : "10px")
+  .style("fill", d => d.depth <= 1 ? "#f0f0f5" : "#a1a1aa")
+  .style("font-weight", d => d.depth <= 1 ? "600" : "400");
+
+// ── Tooltip ──
+const tooltip = document.getElementById("tooltip");
+const ttTitle = document.getElementById("tt-title");
+const ttDesc = document.getElementById("tt-desc");
+const ttMeta = document.getElementById("tt-meta");
+
+node.on("pointerenter", (event, d) => {
+  if (!d.desc) return;
+  ttTitle.textContent = d.name;
+  ttDesc.textContent = d.desc;
+  ttMeta.textContent = d.meta || '';
+  tooltip.classList.add("show");
+}).on("pointermove", (event) => {
+  tooltip.style.left = (event.clientX + 16) + "px";
+  tooltip.style.top = (event.clientY - 10) + "px";
+  // Keep on screen
+  const rect = tooltip.getBoundingClientRect();
+  if (rect.right > window.innerWidth - 10) tooltip.style.left = (event.clientX - rect.width - 16) + "px";
+  if (rect.bottom > window.innerHeight - 10) tooltip.style.top = (event.clientY - rect.height - 16) + "px";
+}).on("pointerleave", () => {
+  tooltip.classList.remove("show");
+});
+
+// Click to toggle children
+node.on("click", (event, d) => {
+  event.stopPropagation();
+  if (!data.children) return;
+
+  // Find the data node
+  function findDataNode(root, name) {
+    if (root.name === name) return root;
+    if (root.children) {
+      for (const c of root.children) {
+        const found = findDataNode(c, name);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  const dataNode = findDataNode(data, d.name);
+  if (!dataNode || !dataNode.children) return;
+
+  // Toggle collapse
+  const isNowCollapsed = !d.collapsed;
+  d.collapsed = isNowCollapsed;
+
+  // Collect all descendant ids
+  const removedIds = new Set();
+  function collectDescendants(node) {
+    if (node.children) {
+      node.children.forEach(c => {
+        removedIds.add(c.name.replace(/\s+/g, '_'));
+        collectDescendants(c);
+      });
+    }
+  }
+  collectDescendants(dataNode);
+
+  // Filter nodes and links
+  const newNodes = nodes.filter(n => !removedIds.has(n.id) || n.id === d.id);
+  const newLinks = links.filter(l => {
+    const sid = typeof l.source === 'object' ? l.source.id : l.source;
+    const tid = typeof l.target === 'object' ? l.target.id : l.target;
+    return !removedIds.has(sid) && !removedIds.has(tid);
+  });
+
+  // Restart simulation with filtered data
+  if (isNowCollapsed) {
+    // Remove descendants
+    nodes.length = 0;
+    nodes.push(...newNodes);
+    links.length = 0;
+    links.push(...newLinks);
+  } else {
+    // Re-add children by re-flattening
+    nodes.length = 0;
+    links.length = 0;
+    nodeMap.clear();
+    function reflatten(root, parentId = null, depth = 0) {
+      const id = root.name.replace(/\s+/g, '_');
+      const existing = nodes.find(n => n.id === id);
+      const nd = { id, name: root.name, color: root.color, size: root.size, desc: root.desc || '', meta: root.meta || '', depth, parentId, collapsed: existing?.collapsed ?? (depth > 0 && depth < 2 ? false : undefined) };
+      nodes.push(nd);
+      nodeMap.set(id, nd);
+      if (parentId !== null) links.push({ source: parentId, target: id });
+      if (root.children && !nd.collapsed) {
+        root.children.forEach(c => reflatten(c, id, depth + 1));
+      }
+    }
+    reflatten(data);
+  }
+
+  // Update simulation
+  simulation.nodes(nodes);
+  simulation.force("link").links(links);
+  simulation.alpha(0.5).restart();
+
+  // Update rendering
+  updateGraph();
+});
+
+// ── Update rendering ──
+function updateGraph() {
+  link.data(links).join("line");
+
+  const nodeSel = node.data(nodes, d => d.id).join(
+    enter => {
+      const g = enter.append("g").attr("cursor", "pointer");
+      g.append("circle").attr("r", d => d.size).attr("fill", d => d.color).attr("fill-opacity", 0.15).attr("stroke", d => d.color).attr("stroke-width", 1.5).attr("stroke-opacity", 0.4);
+      g.append("circle").attr("r", d => d.size * 0.55).attr("fill", d => d.color).attr("fill-opacity", 0.9);
+      g.append("text").attr("class", d => d.depth === 0 ? "node-label root" : d.depth === 1 ? "node-label category" : "node-label").attr("dy", d => d.size + 14).attr("text-anchor", "middle").style("font-size", d => d.depth === 0 ? "14px" : d.depth === 1 ? "12px" : "10px").style("fill", d => d.depth <= 1 ? "#f0f0f5" : "#a1a1aa").style("font-weight", d => d.depth <= 1 ? "600" : "400");
+      return g;
+    },
+    update => update,
+    exit => exit.remove()
+  );
+}
+
+// ── Tick ──
+simulation.on("tick", () => {
+  link
+    .attr("x1", d => d.source.x)
+    .attr("y1", d => d.source.y)
+    .attr("x2", d => d.target.x)
+    .attr("y2", d => d.target.y);
+
+  node.attr("transform", d => `translate(${d.x},${d.y})`);
+});
+
+// ── Search ──
+const searchInput = document.getElementById("search");
+searchInput.addEventListener("input", () => {
+  const query = searchInput.value.toLowerCase().trim();
+
+  node.selectAll("circle").attr("fill-opacity", d => {
+    if (!query) return d.depth <= 1 ? 0.9 : 0.9;
+    const match = d.name.toLowerCase().includes(query) || d.desc?.toLowerCase().includes(query) || d.meta?.toLowerCase().includes(query);
+    return match ? 0.9 : 0.15;
+  }).attr("stroke-opacity", d => {
+    if (!query) return 0.4;
+    const match = d.name.toLowerCase().includes(query) || d.desc?.toLowerCase().includes(query) || d.meta?.toLowerCase().includes(query);
+    return match ? 0.8 : 0.1;
+  });
+
+  node.selectAll("text").style("opacity", d => {
+    if (!query) return 1;
+    const match = d.name.toLowerCase().includes(query) || d.desc?.toLowerCase().includes(query) || d.meta?.toLowerCase().includes(query);
+    return match ? 1 : 0.2;
+  });
+
+  link.attr("stroke-opacity", () => query ? 0.03 : 0.08);
+});
+
+// ── Resize ──
+window.addEventListener("resize", () => {
+  svg.attr("viewBox", [0, 0, window.innerWidth, window.innerHeight]);
+});
+
+// ── Keyboard shortcut: press 0 to reset zoom ──
+window.addEventListener("keydown", (e) => {
+  if (e.key === "0") svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity.translate(width/2, height/2).scale(0.55));
+  if (e.key === "f" && !e.ctrlKey && !e.metaKey) searchInput.focus();
+});
+
+console.log("🧠 Jarvis OS Mind Map loaded — 189 skills, 4 agents, 30+ playbooks, 25K+ graph nodes");
+console.log("🖱️  Scroll to zoom | Drag to pan | Click nodes to expand/collapse | Press 0 to reset | Press F to search");
+</script>
+</body>
+</html>

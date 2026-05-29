@@ -1,0 +1,66 @@
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { streamText, convertToModelMessages } from 'ai';
+import type { UIMessage } from 'ai';
+
+// Force dynamic execution to bypass Next.js static page compilation and route caching
+export const dynamic = 'force-dynamic';
+
+// Extend execution limit to allow multi-step agent tool loops to resolve without dropping
+export const maxDuration = 60;
+
+// Provider definitions — DeepSeek V4 Pro primary, Kimi K2.6 secondary
+const deepseek = createOpenAICompatible({
+  name: 'deepseek',
+  baseURL: 'https://api.deepseek.com/v1',
+  apiKey: process.env.DEEPSEEK_API_KEY!,
+});
+
+const kimi = createOpenAICompatible({
+  name: 'kimi',
+  baseURL: process.env.KIMI_API_BASE || 'https://api.moonshot.ai/v1',
+  apiKey: process.env.KIMI_API_KEY!,
+});
+
+function resolveModel(modelId: string) {
+  if (modelId === 'kimi-k2.6') return kimi('kimi-k2.6');
+  // Default: DeepSeek V4 Pro
+  return deepseek('deepseek-chat');
+}
+
+export async function POST(req: Request) {
+  try {
+    const { messages, model_id } = (await req.json()) as {
+      messages: UIMessage[];
+      model_id?: string;
+    };
+
+    const result = streamText({
+      model: resolveModel(model_id || 'deepseek-v4-pro'),
+      system: `You are Jarvis — an elite, Gemini-grade AI agent for NewLeaf Financial.
+You have access to tools. Execute steps concisely. If a tool fails repeatedly,
+stop and ask the user for clarification rather than creating an infinite correction loop.`,
+
+      messages: await convertToModelMessages(messages),
+
+      // Phase 2: empty tools object — Phase 4 will add tool definitions + maxSteps
+      tools: {},
+    });
+
+    // Terminate upstream generations immediately if user cancels/closes
+    req.signal.addEventListener('abort', () => {
+      // AbortController logic handled automatically by Vercel AI SDK lifecycle
+    });
+
+    // Serialize text tokens, tracking structures, and tool results natively for assistant-ui
+    return result.toUIMessageStreamResponse();
+  } catch (error) {
+    console.error('Server Stream Failure:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal Server Error Processing Stream' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+  }
+}

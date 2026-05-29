@@ -116,6 +116,7 @@ const JarvisAdapter: ChatModelAdapter = {
     const toolCalls: any[] = [];
     let sessionId: string | null = null;
     let lastYield = 0;
+    let receivedDone = false;
 
     const buildContent = (): any[] => {
       const content: any[] = [];
@@ -213,7 +214,11 @@ const JarvisAdapter: ChatModelAdapter = {
       } else if (type === "error") {
         accumulatedText += `\n\n⚠ Error: ${data.error || "unknown"}`;
       } else if (type === "done") {
+        receivedDone = true;
         if (typeof window !== "undefined") localStorage.removeItem(LS_SESSION);
+      } else if (type === "keepalive" || type === "heartbeat") {
+        // Heartbeat — keep stream alive, no content change needed
+        continue;
       }
 
       const now = Date.now();
@@ -221,9 +226,21 @@ const JarvisAdapter: ChatModelAdapter = {
         yield { content: buildContent() };
         lastYield = now;
       }
-    }
+    } // end while loop
 
     yield { content: buildContent() };
+
+    // Stream ended — check if it was clean or unexpected
+    if (!receivedDone && accumulatedText) {
+      // Stream ended without a "done" event — likely timeout or disconnect
+      toast.warning("Stream paused — refresh if you need more", {
+        description: "Jarvis may still be working. Refresh to continue.",
+        duration: 10000,
+        id: "stream-paused",
+      });
+    } else if (receivedDone) {
+      toast.dismiss("stream-paused");
+    }
 
     // PERSIST FINAL MESSAGE TO SESSION-STORE for ConversationHydrator survival on refresh
     try {

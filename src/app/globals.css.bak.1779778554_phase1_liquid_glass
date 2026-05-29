@@ -1,0 +1,134 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222 11% 11%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222 11% 11%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 11% 11%;
+
+  /* Gemini Vibrant Blue */
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 222 11% 11%;
+
+  --muted: 220 14% 96%;
+  --muted-foreground: 220 9% 46%;
+
+  /* Gemini Coral Accent */
+  --accent: 14 100% 75%;
+  --accent-foreground: 222 47% 11%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 217 91% 60%;
+
+  --radius: 0.875rem;
+
+  /* Jarvis vibrant accents */
+  --jarvis-emerald: 158 64% 52%;
+  --jarvis-purple: 271 76% 53%;
+  --jarvis-amber: 38 92% 50%;
+  --jarvis-pink: 330 81% 60%;
+
+  /* Gemini-style gradient backgrounds */
+  --gradient-mesh: radial-gradient(at 0% 0%, hsl(217 91% 90%) 0%, transparent 50%),
+                   radial-gradient(at 100% 0%, hsl(271 76% 90%) 0%, transparent 50%),
+                   radial-gradient(at 50% 100%, hsl(14 100% 92%) 0%, transparent 50%);
+}
+
+.dark {
+  --background: 222 24% 5%;
+  --foreground: 210 20% 98%;
+
+  --card: 222 22% 7%;
+  --card-foreground: 210 20% 98%;
+
+  --popover: 222 22% 7%;
+  --popover-foreground: 210 20% 98%;
+
+  --primary: 217 91% 65%;
+  --primary-foreground: 222 47% 11%;
+
+  --secondary: 217 19% 12%;
+  --secondary-foreground: 210 20% 98%;
+
+  --muted: 217 19% 12%;
+  --muted-foreground: 217 11% 65%;
+
+  --accent: 14 100% 70%;
+  --accent-foreground: 222 47% 11%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 217 19% 15%;
+  --input: 217 19% 15%;
+  --ring: 217 91% 65%;
+
+  --gradient-mesh: radial-gradient(at 0% 0%, hsl(217 91% 25% / 0.4) 0%, transparent 50%),
+                   radial-gradient(at 100% 0%, hsl(271 76% 25% / 0.4) 0%, transparent 50%),
+                   radial-gradient(at 50% 100%, hsl(14 100% 30% / 0.3) 0%, transparent 50%);
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * { border-color: hsl(var(--border)); }
+  body {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+  .gemini-mesh { background-image: var(--gradient-mesh); }
+  .glass {
+    background: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .jarvis-shimmer {
+    background: linear-gradient(110deg, transparent 30%, hsl(var(--primary) / 0.15) 50%, transparent 70%);
+    background-size: 200% 100%;
+    animation: shimmer 2.5s ease-in-out infinite;
+  }
+}

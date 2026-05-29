@@ -1,11 +1,39 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Wifi, WifiOff, Loader2 } from "lucide-react";
 
 export type ConnectionState = "connected" | "streaming" | "reconnecting" | "offline";
 
+const LS_MODEL_KEY = "jarvis-os:model:v1";
+
+const MODEL_LABELS: Record<string, string> = {
+  "deepseek-v4-pro": "DeepSeek V4 Pro",
+  "kimi-k2.6": "Kimi K2.6",
+};
+
+function getModelLabel(): string {
+  if (typeof window === "undefined") return "DeepSeek V4 Pro";
+  const id = localStorage.getItem(LS_MODEL_KEY) || "deepseek-v4-pro";
+  return MODEL_LABELS[id] || id;
+}
+
 export function ConnectionPill({ state, latency }: { state: ConnectionState; latency?: number }) {
+  const [modelLabel, setModelLabel] = useState("DeepSeek V4 Pro");
+
+  useEffect(() => {
+    setModelLabel(getModelLabel());
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === LS_MODEL_KEY) {
+        const id = e.newValue || "deepseek-v4-pro";
+        setModelLabel(MODEL_LABELS[id] || id);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
   const config = {
     connected: { color: "bg-emerald-500", glow: "shadow-emerald-500/50", label: "Connected", icon: Wifi, pulse: false },
     streaming: { color: "bg-cyan-400", glow: "shadow-cyan-400/60", label: "Streaming", icon: Wifi, pulse: true },
@@ -28,6 +56,7 @@ export function ConnectionPill({ state, latency }: { state: ConnectionState; lat
         <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${config.color} shadow-md ${config.glow}`} />
       </span>
       <span className="tracking-tight">{config.label}</span>
+      <span className="text-zinc-500">· {modelLabel}</span>
       {typeof latency === "number" && state === "connected" && (
         <span className="text-zinc-500">· {latency}ms</span>
       )}
