@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 const VPS_URL = process.env.JARVIS_VPS_URL || "http://187.127.250.171:8102";
 const TOKEN = process.env.DIAGNOSTICS_API_KEY || "NL2026061471";
-const IDLE_TIMEOUT_MS = 180_000; // 3min of no VPS events = force close (was 90s — too aggressive for deep reasoning)
+const IDLE_TIMEOUT_MS = 600_000; // 10min of TRUE silence = force close. Heartbeat keeps the line warm so deep reasoning gaps never trip this. (was 180s — guillotined long runs)
 
 function sse(event: string, data: any): Uint8Array {
   return new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -88,15 +88,23 @@ export async function POST(req: NextRequest) {
         if (Date.now() - lastEventAt > IDLE_TIMEOUT_MS) {
           try { controller.enqueue(sse("error", { error: `Idle timeout after ${IDLE_TIMEOUT_MS/1000}s — session cancelled` })); } catch (_) {}
           if (activeSid) await cancelVpsSession(activeSid);
-          if (idleWatchdog) { clearInterval(idleWatchdog); idleWatchdog = null; }
+          if (idleWatchdog) { clearInterval(idleWatchdog); idleWatchdog = null; } try { clearInterval(heartbeat); } catch (_) {}
           try { controller.close(); } catch (_) {}
         }
       }, 5000);
 
+      // HEARTBEAT: emit a keepalive every 15s so the HTTP stream never looks
+      // idle to Vercel's proxy or the browser. The client ignores keepalive
+      // events (no content change). This is what lets deep runs survive long
+      // think-gaps without the connection being severed.
+      const heartbeat = setInterval(() => {
+        try { controller.enqueue(sse("keepalive", { t: Date.now() })); } catch (_) {}
+      }, 15000);
+
       // If client disconnects (closes tab, hits Stop), cancel VPS session
       req.signal.addEventListener("abort", async () => {
         if (activeSid) await cancelVpsSession(activeSid);
-        if (idleWatchdog) { clearInterval(idleWatchdog); idleWatchdog = null; }
+        if (idleWatchdog) { clearInterval(idleWatchdog); idleWatchdog = null; } try { clearInterval(heartbeat); } catch (_) {}
         try { controller.close(); } catch (_) {}
       });
 
@@ -174,7 +182,7 @@ export async function POST(req: NextRequest) {
         const msg = err?.message || String(err);
         try { controller.enqueue(sse("error", { error: msg })); } catch (_) {}
       } finally {
-        if (idleWatchdog) { clearInterval(idleWatchdog); idleWatchdog = null; }
+        if (idleWatchdog) { clearInterval(idleWatchdog); idleWatchdog = null; } try { clearInterval(heartbeat); } catch (_) {}
         try { controller.close(); } catch (_) {}
       }
     },

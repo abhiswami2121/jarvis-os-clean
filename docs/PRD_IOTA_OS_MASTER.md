@@ -141,3 +141,45 @@ Iota maintains and references its own operating knowledge on every run. This doc
 ---
 
 *Merged from the V2 Generative-OS PRD set (artifacts canvas, generative OS production, deploy) + on-disk ARTIFACTS.md. This is the single source of truth for the iota build.*
+
+---
+
+## 8. GROUND TRUTH — Streaming engine & known bugs (verified 2026-05-29)
+
+### 8.1 The engine IS the official Claude Agent SDK
+The VPS service `claude-agent-api` (PM2, `/home/hermes/claude-agent-api`, online) runs:
+- `claude-agent-sdk==0.1.81` (Anthropic's OFFICIAL Agent SDK) — `from claude_agent_sdk import ...` in server.py
+- `anthropic==0.97.0`, `langchain-anthropic==1.4.1`
+- Exposes 3 model profiles behind one HTTP surface (port 8102):
+  - `claude-sonnet` (default Anthropic)
+  - `claude-opus`
+  - `deepseek-v4` (DeepSeek via Anthropic-compatible endpoint — profile switch overrides ANTHROPIC_BASE_URL + ANTHROPIC_API_KEY)
+- Conversation state persists in VPS SQLite (chat_store) keyed by `conversation_id`.
+- DECISION: We do NOT swap the engine. It is already official. To get "new SDK" features we `pip install -U claude-agent-sdk` on the VPS — not a rebuild. Parallel agents = multiple SDK sessions, not a new runtime.
+
+### 8.2 The frontend streaming chain
+`jarvis-runtime.tsx` (live streaming runtime) → `src/app/api/agent/route.ts` (SSE proxy) → VPS :8102
+- `api/agent/route.ts`: `maxDuration=300` (Vercel Hobby cap), `IDLE_TIMEOUT_MS=180_000`, intent classifier (all tiers maxTurns=250), idle watchdog that CANCELS the VPS session on silence.
+- `src/app/api/chat/route.ts`: a SEPARATE ai-sdk path (DeepSeek/Kimi via @ai-sdk/openai-compatible) used by the assistant-ui fallback runtime.
+- `src/app/api/jarvis-proxy/{route,resume,files}`: job/resume/file surfaces.
+
+### 8.3 CONFIRMED BUGS (the "stops after a few minutes + weird UI on refresh")
+**BUG A — stream dies mid-run.** Two compounding causes:
+  1. `IDLE_TIMEOUT_MS=180s` watchdog cancels the VPS session during legitimate long/deep reasoning gaps.
+  2. Vercel `maxDuration=300` (5 min) hard-caps the HTTP stream on Hobby; deep runs exceed it.
+  → Result: tokens stop, no terminal `done` event, connection guillotined.
+**BUG B — refresh shows a different, misaligned UI.** There are TWO runtimes with different styling:
+  - live: `jarvis-runtime.tsx` (custom streaming look)
+  - fallback-on-reload: assistant-ui default runtime reading persisted history via `api/chat` → renders the "vibrant background / older messages" look that doesn't match the rest.
+  → Root cause: reload does not re-attach to the live stream; it falls back to history render in a second visual system.
+
+### 8.4 FIX PLAN (Phase 1 — make ONE agent stream solid)
+1. **Survive long runs:** raise/disable the idle watchdog for active runs (only cancel on true disconnect, not silence); add SSE heartbeat/keepalive so the connection never looks idle; document the Vercel maxDuration ceiling (Pro=900s) and gate deep runs behind resume.
+2. **Resume on reload (kill BUG B):** on mount, if a conversation has an in-flight job, re-attach to the live stream via `jarvis-proxy/resume` instead of falling back to the history-only runtime. One runtime, one look.
+3. **Unify the visual:** ensure the reload/history view renders through the SAME message components as the live stream (no second design system).
+4. **Synthesize output cleanly:** guarantee a terminal `done`/synthesis event so the final answer is committed to history even if the socket drops.
+
+Only after ONE agent streams solid do we add the parallel swarm (multiple SDK sessions fan-out/fan-in).
+
+### 8.5 Invariant added
+6. The engine is the official `claude-agent-sdk`. Never describe it as "custom/unofficial." Upgrades = pip, not rewrite.

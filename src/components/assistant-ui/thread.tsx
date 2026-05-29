@@ -4,6 +4,7 @@ import {
   UserMessageAttachments,
 } from "@/components/assistant-ui/attachment";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
+import ChatStatusLine from "@/components/jarvis/ChatStatusLine";
 
 import {
   ReasoningContent,
@@ -89,6 +90,7 @@ export const Thread: FC = () => {
           <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer sticky bottom-0 mt-auto flex flex-col gap-4 overflow-visible rounded-t-(--composer-radius) bg-background pb-4 md:pb-6">
             <ThinkingPulse />
             <ThreadScrollToBottom />
+            <ChatStatusLine />
             <Composer />
           </ThreadPrimitive.ViewportFooter>
         </div>

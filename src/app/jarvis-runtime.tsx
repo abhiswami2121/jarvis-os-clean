@@ -5,6 +5,26 @@ import { useLocalRuntime, type ChatModelAdapter, AssistantRuntimeProvider } from
 import { toast } from "sonner";
 import { useSessionStore } from "@/lib/session-store";
 
+// --- Live status line helpers (P-UX) ---
+function emitStatus(label: string | null) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("jarvis:status", { detail: { label } }));
+}
+function humanToolLabel(name: string, input: any): string {
+  const n = (name || "tool").toLowerCase();
+  const f = input?.path || input?.file_path || input?.filename || input?.file || "";
+  const short = typeof f === "string" && f ? f.split("/").slice(-1)[0] : "";
+  if (/(read|cat|open|view|get_file|grep|search|glob|find)/.test(n)) return short ? `Reading ${short}` : "Reading files";
+  if (/(write|edit|replace|apply|patch|create_file|str_replace)/.test(n)) return short ? `Editing ${short}` : "Editing files";
+  if (/(bash|shell|run|exec|command|terminal)/.test(n)) { const cmd = input?.command || input?.cmd; return cmd ? `Running ${String(cmd).slice(0, 40)}` : "Running command"; }
+  if (/(deploy|vercel|publish|push|git)/.test(n)) return "Deploying";
+  if (/(web|browse|fetch|http|curl|crawl)/.test(n)) return "Searching the web";
+  if (/(canvas|slack|synth)/.test(n)) return "Synthesizing canvas";
+  return `Running ${name || "tool"}`;
+}
+
+
+
 const LS_MODEL = "jarvis-os:model:v1";
 const LS_SESSION = "jarvis-os:session:v1";
 const LS_CID = "jarvis-os:cid:v1";  // stable conversation id per browser/tab
@@ -155,6 +175,7 @@ const JarvisAdapter: ChatModelAdapter = {
       } else if (type === "reasoning" || type === "thinking") {
         reasoningText += data.text || "";
       } else if (type === "tool_use" || type === "tool_call") {
+        emitStatus(humanToolLabel(data.name || "tool", data.input || data.args || {}));
         toolCalls.push({
           type: "tool-call",
           toolCallId: data.id || `t${toolCalls.length}`,
@@ -212,9 +233,11 @@ const JarvisAdapter: ChatModelAdapter = {
           }
         }
       } else if (type === "error") {
+        emitStatus(null);
         accumulatedText += `\n\n⚠ Error: ${data.error || "unknown"}`;
       } else if (type === "done") {
         receivedDone = true;
+        emitStatus(null);
         if (typeof window !== "undefined") localStorage.removeItem(LS_SESSION);
       } else if (type === "keepalive" || type === "heartbeat") {
         // Heartbeat — keep stream alive, no content change needed
@@ -229,6 +252,7 @@ const JarvisAdapter: ChatModelAdapter = {
     } // end while loop
 
     yield { content: buildContent() };
+    emitStatus(null);
 
     // Stream ended — check if it was clean or unexpected
     if (!receivedDone && accumulatedText) {
