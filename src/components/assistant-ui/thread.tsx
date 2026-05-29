@@ -486,8 +486,10 @@ const AssistantMessage: FC = () => {
               },
               Text: (props: any) => <JarvisText {...props} />,
               Reasoning: (props: any) => <JarvisReasoning {...props} />,
-              ToolCall: (props: any) =>
-                props.toolUI ?? <JarvisToolCall {...(props as any)} />,
+              tools: {
+                Override: (props: any) =>
+                  props.toolUI ?? <JarvisToolCall {...(props as any)} />,
+              },
             }}
           />
           <MessageError />
