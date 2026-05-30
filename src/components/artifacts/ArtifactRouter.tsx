@@ -8,6 +8,7 @@ import type { Artifact } from "@/lib/artifacts/types";
 import { LiquidErrorCard } from "./LiquidErrorCard";
 import { SlackCanvasArtifact } from "./SlackCanvasArtifact";
 import { ErrorRecoveryArtifactComponent } from "./ErrorRecoveryArtifact";
+import { ExpandButton } from "./ExpandButton";
 
 // ── Props ───────────────────────────────────────────────────────
 interface ArtifactRouterProps {
@@ -17,27 +18,36 @@ interface ArtifactRouterProps {
 
 /**
  * Routes an Artifact to the correct component based on its type.
+ * Each artifact gets an "Expand" button that opens it in the
+ * full ArtifactWorkspace drawer for a richer interactive experience.
  */
 export function ArtifactRouter({ artifact, className }: ArtifactRouterProps) {
-  switch (artifact.type) {
-    case "data_table":
-      return <DataTableArtifact artifact={artifact} className={className} />;
-    case "chart":
-      return <ChartArtifact artifact={artifact} className={className} />;
-    case "status_card":
-      return <StatusCardArtifact artifact={artifact} className={className} />;
-    case "slack_canvas":
-      return <SlackCanvasArtifact artifact={artifact as any} />;
+  const renderArtifact = () => {
+    switch (artifact.type) {
+      case "data_table":
+        return <DataTableArtifact artifact={artifact} className={className} />;
+      case "chart":
+        return <ChartArtifact artifact={artifact} className={className} />;
+      case "status_card":
+        return <StatusCardArtifact artifact={artifact} className={className} />;
+      case "slack_canvas":
+        return <SlackCanvasArtifact artifact={artifact as any} />;
       case "error_recovery":
         return <ErrorRecoveryArtifactComponent artifact={artifact as any} />;
-    case "action_panel":
-      return <ActionPanelArtifact artifact={artifact} className={className} />;
-    default:
-      return <LiquidErrorCard title="Unknown Artifact Type" message={`Cannot render artifact type: ${(artifact as any).type}`} />;
-    // legacy default:
-      // Exhaustiveness check — should never happen with validated artifacts
-      return null;
-  }
+      case "action_panel":
+        return <ActionPanelArtifact artifact={artifact} className={className} />;
+      default:
+        return <LiquidErrorCard title="Unknown Artifact Type" message={`Cannot render artifact type: ${(artifact as any).type}`} />;
+    }
+  };
+
+  return (
+    <div className="group/artifact relative">
+      {renderArtifact()}
+      {/* Expand button — appears on hover, opens in ArtifactWorkspace drawer */}
+      <ExpandButton artifact={artifact} />
+    </div>
+  );
 }
 
 // ── Multi-artifact renderer ─────────────────────────────────────

@@ -9,6 +9,7 @@ import { ConnectionPill } from "@/components/jarvis/ConnectionPill";
 import { ConversationHydrator } from "@/components/jarvis/ConversationHydrator";
 import { ChatAurora } from "@/components/jarvis/ChatAurora";
 import { CanvasOverlay } from "@/components/canvas/CanvasOverlay";
+import { ArtifactWorkspace } from "@/components/workspace/ArtifactWorkspace";
 import { SlackCanvasToolUI } from "@/components/chat/SlackCanvasToolUI";
 import { useConnectionState } from "@/hooks/useConnectionState";
 import { toast } from "sonner";
@@ -62,6 +63,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       </div>
       <SlackCanvasToolUI />
       <CanvasOverlay />
+      <ArtifactWorkspace />
     </JarvisRuntimeProvider>
   );
 }
