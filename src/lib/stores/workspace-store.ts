@@ -14,6 +14,7 @@ export type WorkspaceViewMode =
   | "action_panel"  // Action buttons view
   | "slack_canvas"  // Slack canvas preview
   | "code"          // Syntax-highlighted code
+  | "app"           // Deployed MVP/demo app (iframe + controls)
 
 // ── Workspace Item ────────────────────────────────────────────────
 
@@ -64,6 +65,8 @@ function resolveViewMode(artifact: Artifact): WorkspaceViewMode {
       return "slack_canvas";
     case "error_recovery":
       return "action_panel";
+    case "deployed_app":
+      return "app";
     default:
       return "report";
   }

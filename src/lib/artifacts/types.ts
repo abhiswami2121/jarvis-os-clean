@@ -113,7 +113,48 @@ export const SlackCanvasArtifactSchema = z.object({
 });
 export type SlackCanvasArtifact = z.infer<typeof SlackCanvasArtifactSchema>;
 
-export type Artifact = z.infer<typeof ArtifactSchema> | SlackCanvasArtifact | ErrorRecoveryArtifact;
+// ── Deployed App Artifact (MVP/Demo App pipeline) ─────────────────
+export const DeployedAppArtifactSchema = z.object({
+  type: z.literal("deployed_app"),
+  title: z.string(),
+  app_type: z.enum(["web_app", "landing_page", "data_dashboard", "mini_app", "component", "spa"]).default("web_app"),
+  status: z.enum(["generating", "sandbox", "building", "deploying", "live", "error"]).default("generating"),
+
+  // URLs
+  live_url: z.string().optional(),
+  sandbox_url: z.string().optional(),
+  github_url: z.string().optional(),
+
+  // Content
+  description: z.string().default(""),
+  html_content: z.string().optional(),
+  source_files: z.array(z.object({
+    path: z.string(),
+    content: z.string(),
+    language: z.string(),
+  })).optional(),
+
+  // Framework
+  framework: z.enum(["html", "react", "nextjs", "vite"]).optional().default("html"),
+
+  // Actions
+  actions: z.array(z.object({
+    label: z.string(),
+    intent: z.enum(["edit_code", "redeploy", "view_live", "view_sandbox", "download", "share"]),
+    variant: z.enum(["primary", "secondary", "danger"]).optional(),
+  })).optional(),
+
+  metadata: z.object({
+    slug: z.string().optional(),
+    repo_path: z.string().optional(),
+    deployed_at: z.string().optional(),
+    build_time: z.number().optional(),
+    commit_sha: z.string().optional(),
+  }).optional(),
+});
+export type DeployedAppArtifact = z.infer<typeof DeployedAppArtifactSchema>;
+
+export type Artifact = z.infer<typeof ArtifactSchema> | SlackCanvasArtifact | ErrorRecoveryArtifact | DeployedAppArtifact;
 
 // ── Parser Result ──────────────────────────────────────────────
 export interface ParseResult {

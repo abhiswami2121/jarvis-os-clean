@@ -9,6 +9,7 @@ import { SpreadsheetView } from "./SpreadsheetView";
 import { ChartView } from "./ChartView";
 import { WebPreview } from "./WebPreview";
 import { ReportCanvas } from "./ReportCanvas";
+import { AppPreview } from "./AppPreview";
 
 // ── View Mode Meta ────────────────────────────────────────────────
 
@@ -17,6 +18,7 @@ const VIEW_MODES: { mode: WorkspaceViewMode; label: string; icon: string }[] = [
   { mode: "chart", label: "Chart", icon: "📈" },
   { mode: "report", label: "Report", icon: "📝" },
   { mode: "web_preview", label: "Preview", icon: "🌐" },
+  { mode: "app", label: "App", icon: "🚀" },
   { mode: "code", label: "Code", icon: "💻" },
 ];
 
@@ -79,6 +81,8 @@ export function ArtifactWorkspace({ className }: ArtifactWorkspaceProps) {
         return <ReportCanvas artifact={activeItem.artifact} />;
       case "web_preview":
         return <WebPreview artifact={activeItem.artifact} />;
+      case "app":
+        return <AppPreview artifact={activeItem.artifact as any} />;
       case "status_card":
       case "action_panel":
       case "slack_canvas":

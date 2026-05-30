@@ -23,6 +23,7 @@ const EXPAND_LABELS: Record<string, string> = {
   action_panel: "Open Actions",
   slack_canvas: "Open Report",
   error_recovery: "Open Details",
+  deployed_app: "Open App Preview",
 };
 
 // ── Component ─────────────────────────────────────────────────────

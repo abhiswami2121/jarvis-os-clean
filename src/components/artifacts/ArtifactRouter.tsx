@@ -4,6 +4,7 @@ import { DataTableArtifact } from "@/components/artifacts/DataTableArtifact";
 import { ChartArtifact } from "@/components/artifacts/ChartArtifact";
 import { StatusCardArtifact } from "@/components/artifacts/StatusCardArtifact";
 import { ActionPanelArtifact } from "@/components/artifacts/ActionPanelArtifact";
+import { DeployedAppCard } from "@/components/artifacts/DeployedAppCard";
 import type { Artifact } from "@/lib/artifacts/types";
 import { LiquidErrorCard } from "./LiquidErrorCard";
 import { SlackCanvasArtifact } from "./SlackCanvasArtifact";
@@ -36,6 +37,8 @@ export function ArtifactRouter({ artifact, className }: ArtifactRouterProps) {
         return <ErrorRecoveryArtifactComponent artifact={artifact as any} />;
       case "action_panel":
         return <ActionPanelArtifact artifact={artifact} className={className} />;
+      case "deployed_app":
+        return <DeployedAppCard artifact={artifact as any} className={className} />;
       default:
         return <LiquidErrorCard title="Unknown Artifact Type" message={`Cannot render artifact type: ${(artifact as any).type}`} />;
     }
