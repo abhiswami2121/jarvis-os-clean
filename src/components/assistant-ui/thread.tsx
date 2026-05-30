@@ -57,6 +57,7 @@ import {
   JarvisToolCall,
   JarvisText,
 } from "@/components/jarvis/JarvisMessageRenderer";
+import { MessagePartsBoundary } from "@/components/assistant-ui/MessagePartsBoundary";
 
 export const Thread: FC = () => {
   return (
@@ -434,6 +435,7 @@ const AssistantMessage: FC = () => {
             "shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_4px_24px_-12px_rgba(16,185,129,0.08)]",
           )}>
             <div className="px-1 py-0.5"></div>
+          <MessagePartsBoundary>
           <MessagePrimitive.Unstable_PartsGrouped
             groupingFunction={(parts) => {
               const groups: { groupKey: string | undefined; indices: number[] }[] = [];
@@ -494,6 +496,7 @@ const AssistantMessage: FC = () => {
               },
             }}
           />
+          </MessagePartsBoundary>
           <MessageError />
           <div className="px-1 py-0.5"></div>
           </div>{/* end aurora glass container */}
@@ -550,7 +553,13 @@ const UserMessage: FC = () => {
 
       <div className="aui-user-message-content-wrapper relative col-start-2 min-w-0">
         <div className="aui-user-message-content wrap-break-word peer rounded-2xl bg-muted px-4 py-2.5 text-foreground empty:hidden">
-          <MessagePrimitive.Parts />
+          {/* T3 (PRD F5): user messages must use the scope-free JarvisText too.
+              The default Text primitive (MarkdownTextPrimitive) reads part scope
+              and crashes on refresh/history-replay. Wrap in MessagePartsBoundary
+              so a single bad part can never white-screen the conversation. */}
+          <MessagePartsBoundary>
+            <MessagePrimitive.Parts components={{ Text: (props: any) => <JarvisText {...props} /> }} />
+          </MessagePartsBoundary>
         </div>
         <div className="aui-user-action-bar-wrapper absolute start-0 top-1/2 -translate-x-full -translate-y-1/2 pe-2 peer-empty:hidden rtl:translate-x-full">
           <UserActionBar />

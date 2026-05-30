@@ -6,10 +6,8 @@ import { useConversationReplay, type HydratedMessage, type MessagePart } from "@
 import { JarvisReasoningView } from "@/components/jarvis/JarvisMessageRenderer";
 import { parseArtifacts } from "@/lib/artifacts/parser";
 import { ArtifactList } from "@/components/artifacts/ArtifactRouter";
-import { MarkdownTextPrimitive } from "@assistant-ui/react-markdown";
-import remarkGfm from "remark-gfm";
-import { defaultComponents } from "@/components/assistant-ui/markdown-text";
 import { cn } from "@/lib/utils";
+import { HistoryMarkdown } from "@/components/jarvis/HistoryMarkdown";
 import { toast } from "sonner";
 
 /**
@@ -223,17 +221,3 @@ function HistoryArtifactAwareText({ text }: { text: string }) {
   );
 }
 
-/** HistoryMarkdown — lightweight renderer for replayed message text.
- *  Uses the same MarkdownTextPrimitive as live messages for consistent UX. */
-function HistoryMarkdown({ content }: { content: string }) {
-  // Cast needed: react-markdown v10 + assistant-ui types omit children
-  // for React 19 compat; in React 18 children is valid at runtime.
-  const MD = MarkdownTextPrimitive as any;
-  return (
-    <MD
-      remarkPlugins={[remarkGfm]}
-      components={defaultComponents}
-      className="aui-md text-sm leading-relaxed text-zinc-200"
-    >{content}</MD>
-  );
-}

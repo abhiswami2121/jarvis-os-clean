@@ -349,3 +349,22 @@
   background-size: 200% 100%;
   animation: reasoning-shimmer 2.5s ease-in-out infinite;
 }
+
+/* === ChatAurora v5 — fixed full-viewport layer (overrides v4 stage) === */
+.chat-aurora-fixed {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  transition: opacity 900ms ease-out;
+  will-change: opacity;
+}
+/* Always faintly alive when idle (Gemini-style ambient glow) */
+.chat-aurora-fixed.is-idle { opacity: 0.32; }
+.chat-aurora-fixed.is-active { opacity: 0.7; }
+.chat-aurora-fixed .aurora-idle-glow { opacity: 0.5; }
+@media (prefers-reduced-motion: reduce) {
+  .chat-aurora-fixed.is-active,
+  .chat-aurora-fixed.is-idle { opacity: 0.22; }
+}

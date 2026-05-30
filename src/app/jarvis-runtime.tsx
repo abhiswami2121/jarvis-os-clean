@@ -147,20 +147,15 @@ const JarvisAdapter: ChatModelAdapter = {
       return content;
     };
 
-    const events: Array<{ name: string; data: any }> = [];
-    let consumerDone = false;
-    consumeSse(reader, (name, data) => events.push({ name, data }))
-      .catch(() => {})
-      .finally(() => { consumerDone = true; });
+    // Highest event sequence number applied so far. The resume-poll uses this
+    // so a reconnect only replays events the UI has not yet seen.
+    let lastSeq = 0;
 
-    while (!consumerDone || events.length > 0) {
-      if (events.length === 0) {
-        await new Promise(r => setTimeout(r, 25));
-        continue;
-      }
-      const ev = events.shift()!;
-      const { name, data } = ev;
+    // Single source of truth for applying one stream event. Both the live loop
+    // and the resume-poll call this, so handling is identical on both paths.
+    const applyEvent = async (name: string, data: any) => {
       const type = data.type || name;
+      if (typeof data.seq === "number" && data.seq > lastSeq) lastSeq = data.seq;
 
       if (type === "session" && data.session_id) {
         sessionId = String(data.session_id);
@@ -241,8 +236,24 @@ const JarvisAdapter: ChatModelAdapter = {
         if (typeof window !== "undefined") localStorage.removeItem(LS_SESSION);
       } else if (type === "keepalive" || type === "heartbeat") {
         // Heartbeat — keep stream alive, no content change needed
+        return;
+      }
+    }; // end applyEvent
+
+    // Drain the live SSE stream into a queue, then apply events in order.
+    const events: Array<{ name: string; data: any }> = [];
+    let consumerDone = false;
+    consumeSse(reader, (name, data) => events.push({ name, data }))
+      .catch(() => {})
+      .finally(() => { consumerDone = true; });
+
+    while (!consumerDone || events.length > 0) {
+      if (events.length === 0) {
+        await new Promise(r => setTimeout(r, 25));
         continue;
       }
+      const ev = events.shift()!;
+      await applyEvent(ev.name, ev.data);
 
       const now = Date.now();
       if (now - lastYield > 50) {
@@ -254,16 +265,53 @@ const JarvisAdapter: ChatModelAdapter = {
     yield { content: buildContent() };
     emitStatus(null);
 
-    // Stream ended — check if it was clean or unexpected
-    if (!receivedDone && accumulatedText) {
-      // Stream ended without a "done" event — likely timeout or disconnect
-      toast.warning("Stream paused — refresh if you need more", {
-        description: "Jarvis may still be working. Refresh to continue.",
-        duration: 10000,
-        id: "stream-paused",
-      });
-    } else if (receivedDone) {
+    // Stream ended — if we never got a "done", the Vercel function likely timed
+    // out while the VPS kept working. Auto-resume by polling the resume endpoint
+    // from the last seq we saw, applying new events through the SAME applyEvent
+    // handler, until we get "done" or run out of attempts. No manual refresh.
+    if (!receivedDone) {
+      const cidForResume = getOrCreateCid();
+      let attempts = 0;
+      const MAX_ATTEMPTS = 40;      // ~40 polls
+      let delay = 1500;             // start 1.5s, back off to 5s
+      let emptyStreak = 0;
+      while (!receivedDone && attempts < MAX_ATTEMPTS && cidForResume) {
+        if (abortSignal?.aborted) break;
+        attempts++;
+        await new Promise(r => setTimeout(r, delay));
+        let payload: any = null;
+        try {
+          const r = await fetch(
+            `/api/jarvis-proxy/resume?conversation_id=${encodeURIComponent(cidForResume)}&since=${lastSeq}`,
+            { signal: abortSignal }
+          );
+          if (!r.ok) { delay = Math.min(delay + 1000, 5000); continue; }
+          payload = await r.json();
+        } catch { delay = Math.min(delay + 1000, 5000); continue; }
+
+        const evts: any[] = Array.isArray(payload?.events) ? payload.events : [];
+        if (evts.length === 0) {
+          emptyStreak++;
+          // 5 empty polls in a row with no work pending — assume the run is
+          // finished or dead; stop quietly instead of spinning.
+          if (emptyStreak >= 5) break;
+          delay = Math.min(delay + 1000, 5000);
+          continue;
+        }
+        emptyStreak = 0;
+        for (const ev of evts) {
+          if (typeof ev?.seq === "number" && ev.seq > lastSeq) lastSeq = ev.seq;
+          await applyEvent(ev.event || ev.data?.type || "", ev.data || {});
+        }
+        yield { content: buildContent() };
+        if (!payload?.has_more) delay = Math.min(delay + 500, 5000);
+      }
+      yield { content: buildContent() };
+      emitStatus(null);
+    }
+    if (receivedDone) {
       toast.dismiss("stream-paused");
+      if (typeof window !== "undefined") localStorage.removeItem(LS_SESSION);
     }
 
     // PERSIST FINAL MESSAGE TO SESSION-STORE for ConversationHydrator survival on refresh
