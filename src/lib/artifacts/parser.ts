@@ -145,3 +145,63 @@ export function preprocessStripArtifacts(text: string): string {
   const { cleanText } = parseArtifacts(text);
   return cleanText;
 }
+
+// ── Canvas XML Tag Support ────────────────────────────────────────────
+//
+// The <canvas id="..." title="..." type="..." version="...">...</canvas>
+// XML tag is an alternative format for artifact blocks. When detected during
+// LLM streaming, the content is extracted, pushed to the artifactStore, and
+// the canvas is auto-opened.
+
+export interface CanvasTagResult {
+  hasCanvas: boolean;
+  textFeed: string; // cleaned text without canvas tags
+  canvasData: {
+    id: string;
+    title: string;
+    type: string;
+    version: number;
+    content: string;
+  } | null;
+}
+
+// Regex for <canvas> XML tags. Handles incomplete/closing tags in streaming.
+const CANVAS_TAG_REGEX = /<canvas\s+id="([^"]+)"\s+title="([^"]+)"\s+type="([^"]+)"(?:\s+version="(\d+)")?\s*>([\s\S]*?)(?:<\/canvas>|$)/;
+
+export function parseCanvasTag(text: string): CanvasTagResult {
+  // Reset lastIndex (regex is global)
+  CANVAS_TAG_REGEX.lastIndex = 0;
+  const match = CANVAS_TAG_REGEX.exec(text);
+  if (!match) {
+    return { hasCanvas: false, textFeed: text, canvasData: null };
+  }
+
+  const [, id, title, type, versionStr, rawContent] = match;
+
+  // Clean code fences inside canvas content
+  let content = rawContent.trim();
+  content = content.replace(/^```[a-zA-Z0-9]*\n?/, "").replace(/\n?```$/, "");
+
+  // Replace canvas block with a clean notification in chat text
+  const textFeed = text.replace(match[0], "").trim();
+
+  return {
+    hasCanvas: true,
+    textFeed,
+    canvasData: {
+      id,
+      title,
+      type,
+      version: parseInt(versionStr || "1", 10),
+      content,
+    },
+  };
+}
+
+/**
+ * Streaming variant: detects partial canvas tags (not yet closed).
+ * Use to avoid premature parsing during active streaming.
+ */
+export function detectPartialCanvasTag(text: string): boolean {
+  return /<canvas\s+id=/.test(text) && !/<\/canvas>/.test(text);
+}

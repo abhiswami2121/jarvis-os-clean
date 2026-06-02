@@ -2,9 +2,10 @@
 
 import React, { useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, GripHorizontal } from "lucide-react";
+import { X, GripHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCanvasStore } from "@/lib/stores/canvas-store";
+import { useArtifactStore } from "@/stores/artifactStore";
 import { CanvasFrame } from "@/components/canvas/CanvasFrame";
 import { TemplateRenderer } from "@/components/canvas/TemplateRenderer";
 
@@ -165,6 +166,8 @@ export function CanvasOverlay({ className }: CanvasOverlayProps) {
 function CanvasHeader({ variant }: { variant?: "mobile" }) {
   const canvasData = useCanvasStore((s) => s.data);
   const close = useCanvasStore((s) => s.close);
+  const currentRevision = useArtifactStore((s) => s.current);
+  const history = useArtifactStore((s) => s.history);
 
   return (
     <div
@@ -178,6 +181,33 @@ function CanvasHeader({ variant }: { variant?: "mobile" }) {
         <span className="text-sm font-medium text-zinc-200 truncate">
           {canvasData?.title ?? "Canvas"}
         </span>
+        {currentRevision && history.length > 1 && (
+          <div className="flex items-center gap-1 ml-2">
+            <button
+              onClick={() => {
+                const idx = history.findIndex((r) => r.id === currentRevision.id);
+                if (idx < history.length - 1) useArtifactStore.getState().selectRevision(history[idx + 1].id);
+              }}
+              className="p-1 hover:bg-white/[0.06] rounded-md text-neutral-500 hover:text-white transition-colors"
+              title="Previous version"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[10px] text-neutral-500 font-mono tabular-nums min-w-[24px] text-center">
+              v{history.length - history.findIndex((r) => r.id === currentRevision.id)}/{history.length}
+            </span>
+            <button
+              onClick={() => {
+                const idx = history.findIndex((r) => r.id === currentRevision.id);
+                if (idx > 0) useArtifactStore.getState().selectRevision(history[idx - 1].id);
+              }}
+              className="p-1 hover:bg-white/[0.06] rounded-md text-neutral-500 hover:text-white transition-colors"
+              title="Next version"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
       <button
         type="button"

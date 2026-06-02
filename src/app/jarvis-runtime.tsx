@@ -4,6 +4,8 @@ import React from "react";
 import { useLocalRuntime, type ChatModelAdapter, AssistantRuntimeProvider } from "@assistant-ui/react";
 import { toast } from "sonner";
 import { useSessionStore } from "@/lib/session-store";
+import { newleafAttachmentAdapter } from "@/lib/attachment-adapters";
+import { parseCanvasTag } from "@/lib/artifacts/parser";
 
 // --- Live status line helpers (P-UX) ---
 function emitStatus(label: string | null) {
@@ -99,8 +101,62 @@ function flattenMessages(messages: any[]) {
   });
 }
 
+// ---- MVP Build Intent Detection ----
+// Regex matches: "build me a feedback form", "build an mvp for...", "build the demo", etc.
+const MVP_INTENT_RE = /build (me )?(an?|the) (mvp|prototype|demo|sandbox|page|form|component|app)\b/i;
+
 const JarvisAdapter: ChatModelAdapter = {
   async *run({ messages, abortSignal }) {
+    // --- MVP Build Intent Check ---
+    // Check the LAST user message for MVP build intent BEFORE routing to VPS agent.
+    const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user");
+    if (lastUserMsg) {
+      const text = typeof lastUserMsg.content === "string"
+        ? lastUserMsg.content
+        : Array.isArray(lastUserMsg.content)
+          ? lastUserMsg.content.filter((p: any) => p.type === "text").map((p: any) => p.text).join(" ")
+          : "";
+      if (MVP_INTENT_RE.test(text)) {
+        // Detected MVP build intent — route to MVP pipeline instead of VPS agent
+        try {
+          const mvpRes = await fetch("/api/mvp/new", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: text }),
+            signal: abortSignal,
+          });
+          if (mvpRes.ok) {
+            const { slug, sessionId, title: mvpTitle, status: mvpStatus, error: mvpError } = await mvpRes.json();
+            if (slug) {
+              const displayTitle = mvpTitle || text.slice(0, 60);
+              // Yield a tool-call part so StartMvpBuildToolUI renders the card
+              yield {
+                content: [{
+                  type: "tool-call",
+                  toolCallId: `mvp-${slug}`,
+                  toolName: "start_mvp_build",
+                  args: { prompt: text, type: "mini-app" },
+                  status: { type: "complete" },
+                  result: JSON.stringify({ slug, title: displayTitle, status: mvpStatus, sessionId }),
+                }]
+              };
+              return; // MVP handled — don't call VPS agent
+            }
+          }
+          // If MVP creation failed, fall through to normal agent (below)
+        } catch {
+          // Network error to MVP builder — fall through to normal agent
+          yield {
+            content: [{
+              type: "text",
+              text: `⚠ MVP Builder is currently unreachable. Falling back to standard chat. Try again in a moment, or rephrase your request.`
+            }]
+          };
+        }
+      }
+    }
+    // --- End MVP Intent Check ---
+
     const model = loadModel();
     const res = await fetch("/api/agent", {
       method: "POST",
@@ -137,11 +193,51 @@ const JarvisAdapter: ChatModelAdapter = {
     let sessionId: string | null = null;
     let lastYield = 0;
     let receivedDone = false;
+    let canvasEmitted = false;
+
+    // P0 FIX 2026-06-01: track yielded toolCallIds so buildContent never
+    // includes the same tool-call part in two consecutive yields. assistant-ui
+    // 0.14.7 tapResources does NOT unregister before re-registering when
+    // message content is replaced during streaming — a duplicate toolCallId
+    // in the content array triggers "Duplicate key in tapResources" invariant.
+    const yieldedToolIds = new Set<string>();
 
     const buildContent = (): any[] => {
+      // CARDINAL FIX 2026-06-01 (Bug #3420): every buildContent yield is the FULL message state.
+      // assistant-ui tapResources treats each yield as a new content snapshot — duplicate
+      // toolCallIds across yields crash tap-resources.ts:30. We dedupe by toolCallId within
+      // the snapshot, taking the latest version (status updates) of each tool.
       const content: any[] = [];
       if (reasoningText) content.push({ type: "reasoning", text: reasoningText });
-      for (const tc of toolCalls) content.push(tc);
+
+      // Check for <canvas> XML tags in accumulated text
+      if (!canvasEmitted) {
+        const canvasCheck = parseCanvasTag(accumulatedText);
+        if (canvasCheck.hasCanvas && canvasCheck.canvasData) {
+          canvasEmitted = true;
+          accumulatedText = canvasCheck.textFeed || "Preview available in Canvas →";
+          // Push plain tool-call (no status) so assistant-ui auto-executes CreateArtifactTool
+          toolCalls.push({
+            type: "tool-call",
+            toolCallId: `canvas_${canvasCheck.canvasData.id}`,
+            toolName: "create_artifact",
+            args: {
+              artifact_type: "report",
+              title: canvasCheck.canvasData.title,
+              content: canvasCheck.canvasData.content,
+            },
+          });
+        }
+      }
+
+      const seenInSnapshot = new Set<string>();
+      for (const tc of toolCalls) {
+        if (seenInSnapshot.has(tc.toolCallId)) continue; // skip duplicates within snapshot
+        seenInSnapshot.add(tc.toolCallId);
+        content.push(tc);
+        yieldedToolIds.add(tc.toolCallId);
+        if (tc._statusChanged) delete tc._statusChanged;
+      }
       if (accumulatedText) content.push({ type: "text", text: accumulatedText });
       if (content.length === 0) content.push({ type: "text", text: "" });
       return content;
@@ -151,9 +247,17 @@ const JarvisAdapter: ChatModelAdapter = {
     // so a reconnect only replays events the UI has not yet seen.
     let lastSeq = 0;
 
+    // Cardinal Law 1: Per-event error counter. If applyEvent crashes
+    // more than 10 times, emit a terminal error and stop the session.
+    // Individual bad events should never kill the whole chat.
+    let applyEventErrors = 0;
+
     // Single source of truth for applying one stream event. Both the live loop
     // and the resume-poll call this, so handling is identical on both paths.
     const applyEvent = async (name: string, data: any) => {
+      let _applyEventErrorCount = 0;
+      try {
+      try {
       const type = data.type || name;
       if (typeof data.seq === "number" && data.seq > lastSeq) lastSeq = data.seq;
 
@@ -183,6 +287,7 @@ const JarvisAdapter: ChatModelAdapter = {
         if (tc) {
           tc.result = data.output || data.content || "";
           tc.status = { type: data.is_error ? "incomplete" : "complete" };
+          tc._statusChanged = true; // P0 fix: force re-yield with updated status
         }
       } else if (type === "canvas_synthesis") {
         // May 27 PRD: canvas_synthesis is a signal event only.
@@ -237,6 +342,83 @@ const JarvisAdapter: ChatModelAdapter = {
       } else if (type === "keepalive" || type === "heartbeat") {
         // Heartbeat — keep stream alive, no content change needed
         return;
+      } else if (type === "finding") {
+        // Phase 4 P1: structured finding → FindingCard tool UI
+        const fdata = data.data || data;
+        toolCalls.push({
+          type: "tool-call",
+          toolCallId: `finding-${toolCalls.length}-${Date.now()}`,
+          toolName: "finding_emitted",
+          args: fdata,
+          status: { type: "complete" },
+        });
+      } else if (type === "action") {
+        // Phase 4 P1: structured action → ActionCard tool UI
+        const adata = data.data || data;
+        toolCalls.push({
+          type: "tool-call",
+          toolCallId: `action-${toolCalls.length}-${Date.now()}`,
+          toolName: "action_emitted",
+          args: adata,
+          status: { type: "complete" },
+        });
+      } else if (type === "command") {
+        // Phase 4 P1: Bash command → CommandCard tool UI
+        const cdata = data.data || data;
+        toolCalls.push({
+          type: "tool-call",
+          toolCallId: cdata.tool_id || `cmd-${toolCalls.length}-${Date.now()}`,
+          toolName: "command_run",
+          args: { ...cdata, exit_code: undefined },
+          status: { type: "running" },
+        });
+      } else if (type === "command_output") {
+        // Phase 4 P1: Bash output → update existing CommandCard
+        const codata = data.data || data;
+        const ctid = codata.tool_id;
+        const existing = toolCalls.find(
+          (t) => t.toolName === "command_run" && t.toolCallId === ctid
+        );
+        if (existing) {
+          existing.args = {
+            ...existing.args,
+            exit_code: codata.exit_code,
+            output_preview: codata.output_preview,
+          };
+          existing.status = { type: "complete" };
+          existing._statusChanged = true; // P0 fix: force re-yield with updated status
+        }
+      } else if (type === "file_diff") {
+        // Phase 4 P1: file edit → FileDiffCard tool UI
+        const fddata = data.data || data;
+        toolCalls.push({
+          type: "tool-call",
+          toolCallId: fddata.tool_id || `diff-${toolCalls.length}-${Date.now()}`,
+          toolName: "file_edited",
+          args: fddata,
+          status: { type: "complete" },
+        });
+      }
+      } catch (applyErr: any) {
+        applyEventErrors++;
+        console.warn(`[jarvis-runtime] applyEvent error #${applyEventErrors}:`, applyErr?.message || applyErr);
+        if (applyEventErrors > 10) {
+          console.error(`[jarvis-runtime] applyEvent: exceeded ${applyEventErrors} errors, emitting terminal error`);
+          emitStatus(null);
+          accumulatedText += `\n\n⚠ Chat session has encountered too many internal errors. Please refresh the page.`;
+          receivedDone = true;
+        }
+        // Continue — don't let one bad event kill the whole chat session
+      }
+      } catch (_applyEventErr: any) {
+        _applyEventErrorCount++;
+        console.warn('[jarvis-runtime] applyEvent error #' + _applyEventErrorCount + ':', _applyEventErr?.message || _applyEventErr);
+        if (_applyEventErrorCount > 10) {
+          console.error('[jarvis-runtime] applyEvent error threshold exceeded, emitting terminal error');
+          accumulatedText += '\n\n⚠️ Chat session encountered errors and was terminated. Please refresh to start a new session.';
+          receivedDone = true;
+          emitStatus(null);
+        }
       }
     }; // end applyEvent
 
@@ -355,7 +537,9 @@ export function JarvisRuntimeProvider({ children, conversationId }: { children: 
       sessionStorage.setItem(LS_CID, conversationId);
     }
   }, [conversationId]);
-  const runtime = useLocalRuntime(JarvisAdapter);
+  const runtime = useLocalRuntime(JarvisAdapter, {
+    adapters: { attachments: newleafAttachmentAdapter },
+  });
   return <AssistantRuntimeProvider runtime={runtime}>{children}</AssistantRuntimeProvider>;
 }
 
