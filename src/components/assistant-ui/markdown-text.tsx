@@ -9,14 +9,72 @@ import {
   useIsMarkdownCodeBlock,
 } from "@assistant-ui/react-markdown";
 import remarkGfm from "remark-gfm";
-import { type FC, memo, useState } from "react";
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { type FC, memo, useState, useEffect, useCallback } from "react";
+import { CheckIcon, CopyIcon, PanelRightOpen } from "lucide-react";
 import { toast } from "sonner";
 
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { cn } from "@/lib/utils";
 
+/**
+ * Threshold: code blocks longer than this many lines are auto-extractable.
+ * Stores a reference to the latest raw markdown for heuristics.
+ */
+const AUTO_EXTRACT_LINE_THRESHOLD = 15;
+
+// Module-level ref to avoid coupling with store during pure render.
+// The MarkdownTextImpl reads this on mount and pushes if threshold exceeded.
+let _lastRawMarkdown = "";
+
+export function setLastRawMarkdown(md: string) {
+  _lastRawMarkdown = md;
+}
+
 const MarkdownTextImpl = () => {
+  // On mount / update, scan raw markdown for large code blocks
+  useEffect(() => {
+    if (!_lastRawMarkdown) return;
+    const md = _lastRawMarkdown;
+
+    // Find all fenced code blocks
+    const fenceRegex = /```(\w*)\n([\s\S]*?)```/g;
+    let match;
+    const extractable: { language: string; code: string; lines: number }[] = [];
+
+    while ((match = fenceRegex.exec(md)) !== null) {
+      const lang = match[1] || "text";
+      const code = match[2];
+      const lines = code.split("\n").length;
+      if (lines >= AUTO_EXTRACT_LINE_THRESHOLD) {
+        extractable.push({ language: lang, code, lines });
+      }
+    }
+
+    if (extractable.length > 0) {
+      // Dynamic import to avoid circular deps on first render
+      import("@/stores/artifactStore").then(({ useArtifactStore }) => {
+        const store = useArtifactStore.getState();
+        // Only push if we don't already have the same content
+        const largest = extractable.reduce((a, b) => (a.lines > b.lines ? a : b));
+        const alreadyExists = store.history.some(
+          (a) => a.content === largest.code && a.title?.startsWith("Code Block"),
+        );
+        if (!alreadyExists) {
+          store.push({
+            type: "code",
+            title: `Code Block (${largest.language || "text"}, ${largest.lines} lines)`,
+            content: largest.code,
+            files: extractable.map((e, i) => ({
+              path: `extract_${i + 1}.${e.language || "txt"}`,
+              content: e.code,
+              language: e.language || "plaintext",
+            })),
+          });
+        }
+      });
+    }
+  }, []);
+
   return (
     <MarkdownTextPrimitive
       remarkPlugins={[remarkGfm]}

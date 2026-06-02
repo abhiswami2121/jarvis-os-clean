@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "../styles/tokens.css";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 import { VersionBanner } from "@/components/jarvis/VersionBanner";
 
@@ -29,11 +30,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark">
       <body className="bg-[#08080f] text-zinc-100 antialiased">
-        {/* JarvisRuntime v2 — NewLeaf Operations Agent — Mission Control — Autonomous deployment verification marker */}
-        <VersionBanner />
-        {children}
-        <Toaster theme="dark" position="top-right" toastOptions={{ style: { background: "rgba(18,18,27,0.95)", border: "1px solid rgba(255,255,255,0.08)", color: "#FAFAFA" } }} />
-        <div id="jarvis-runtime-marker" hidden>JarvisRuntime</div>
+        <ClerkProvider>
+          {/* JarvisRuntime v2 — NewLeaf Operations Agent — Mission Control — Autonomous deployment verification marker */}
+          <VersionBanner />
+          {children}
+          <Toaster theme="dark" position="top-right" toastOptions={{ style: { background: "rgba(18,18,27,0.95)", border: "1px solid rgba(255,255,255,0.08)", color: "#FAFAFA" } }} />
+          <div id="jarvis-runtime-marker" hidden>JarvisRuntime</div>
+        </ClerkProvider>
       </body>
     </html>
   );

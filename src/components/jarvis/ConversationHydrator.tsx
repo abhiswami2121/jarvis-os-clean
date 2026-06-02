@@ -150,13 +150,24 @@ function MessageBubble({ message, index }: { message: HydratedMessage; index: nu
 }
 
 function AssistantParts({ parts }: { parts: MessagePart[] }) {
+  // CARDINAL FIX (Bug #3420): dedupe tool-call parts by toolCallId to prevent
+  // "Duplicate key toolCallId in tapResources" crash from assistant-ui tap-resources.ts:30
+  const seenToolIds = new Set<string>();
+  const deduped = parts.filter((p) => {
+    if (p.type !== "tool-call") return true;
+    const tid = (p as any).toolCallId;
+    if (!tid) return true;
+    if (seenToolIds.has(tid)) return false;
+    seenToolIds.add(tid);
+    return true;
+  });
   return (
     <div className="space-y-1.5">
-      {parts.map((p, i) => {
+      {deduped.map((p, i) => {
         if (p.type === "text") return <HistoryArtifactAwareText key={i} text={p.text} />;
         if (p.type === "reasoning") return <JarvisReasoningView key={i} text={p.text} />;
         if (p.type === "tool-call") {
-          return <HistoryToolChip key={i} toolName={p.toolName} status={p.status} />;
+          return <HistoryToolChip key={`${(p as any).toolCallId}-${i}`} toolName={p.toolName} status={p.status} />;
         }
         return null;
       })}

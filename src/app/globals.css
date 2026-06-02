@@ -194,6 +194,64 @@
     scrollbar-width: thin;
     scrollbar-color: rgb(255 255 255 / 0.08) transparent;
   }
+
+  /* === Stream V: Aurora Glass Command Center Cards === */
+
+  /* Base glass card — shared by all jarvis-card components */
+  .jc-card {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    border-radius: 0.875rem;
+    box-shadow: 0 4px 24px -8px rgb(0 0 0 / 0.3),
+                inset 0 1px 0 rgb(255 255 255 / 0.03);
+    transition: all 200ms ease;
+  }
+  .jc-card:hover {
+    border-color: rgb(255 255 255 / 0.12);
+  }
+
+  /* Tool call card — blue accent */
+  .jc-tool-call {
+    border-left: 3px solid rgb(59 130 246 / 0.4);
+  }
+
+  /* Finding card — yellow accent */
+  .jc-finding {
+    border-left: 4px solid #eab308;
+  }
+
+  /* Action card — green accent */
+  .jc-action {
+    border-left: 4px solid #22c55e;
+  }
+
+  /* Bash card — dark terminal */
+  .jc-bash {
+    background: rgb(10 10 15 / 0.9);
+    border-color: rgb(82 82 91 / 0.4);
+  }
+  .jc-bash pre,
+  .jc-bash code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  }
+
+  /* File edit card — dark code bg */
+  .jc-file-edit {
+    background: rgb(10 10 15 / 0.85);
+    border-color: rgb(82 82 91 / 0.4);
+  }
+  .jc-file-edit pre,
+  .jc-file-edit code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  }
+
+  /* Progress bar */
+  .jc-progress {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgb(255 255 255 / 0.08);
+  }
 }
 
 
@@ -213,6 +271,13 @@
 .animate-slide-down {
   animation: slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* Stream V: additional animation utilities */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up { animation: slide-up 0.3s ease-out; }
 
 @keyframes aurora-shift {
   0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }

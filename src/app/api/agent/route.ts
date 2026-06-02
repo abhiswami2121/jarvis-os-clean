@@ -12,6 +12,13 @@ function sse(event: string, data: any): Uint8Array {
   return new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 }
 
+// ── SSE DEDUP NOTE ───────────────────────────────────────────────────────
+// Dedup fix 2026-06-01: The raw byte passthrough makes SSE-level dedup
+// impractical here. Deduplication is handled at the frontend layer:
+//   - jarvis-runtime.tsx: applyEvent() rejects duplicate toolCallIds
+//   - ConversationHydrator.tsx: AssistantParts dedupes before rendering
+// This keeps the proxy simple and avoids fragile SSE parsing.
+
 function classifyIntent(text: string): { tier: "trivial" | "normal" | "deep"; maxTurns: number } {
   // CRITICAL FIX 2026-05-27 v2: tool budget 250 ACROSS ALL TIERS (Abhi mandate).
   // Backend server.py defaults to 250. hooks.py budget ceiling is 250. Don't choke them here.
@@ -174,7 +181,10 @@ export async function POST(req: NextRequest) {
           const { done, value } = await reader.read();
           if (done) break;
           lastEventAt = Date.now();
-          controller.enqueue(value);
+          try { controller.enqueue(value); } catch (enqErr: any) {
+            try { controller.enqueue(sse("error", { recoverable: true, message: `Stream forwarding error: ${enqErr.message || "unknown"}`.slice(0,200) })); } catch (_) {}
+            // Continue reading — don't let one bad chunk kill the session
+          }
         }
 
         controller.enqueue(sse("done", { type: "done", status: "complete" }));

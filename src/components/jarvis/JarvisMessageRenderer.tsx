@@ -457,12 +457,25 @@ export function JarvisToolStrip({ children }: { children: React.ReactNode }) {
    - Glass morphism container with emerald accent
    - Aurora gradient left border
    - Delegates markdown + artifact detection to ArtifactAwareText
+   - Auto-extracts large code blocks (>15 lines) to artifact panel
    ========================================================== */
 import { TextMessagePartComponent } from "@assistant-ui/react";
 import { ArtifactAwareText } from "@/components/artifacts/ArtifactAwareText";
+import { useCallback, useRef } from "react";
+import { setLastRawMarkdown } from "@/components/assistant-ui/markdown-text";
 
 export const JarvisText: TextMessagePartComponent = ({ text }) => {
   if (!text) return null;
+
+  // Feed raw markdown to the auto-extract heuristic (debounced via ref)
+  const lastFed = useRef("");
+  const feedHeuristic = useCallback(() => {
+    if (text !== lastFed.current) {
+      lastFed.current = text;
+      setLastRawMarkdown(text);
+    }
+  }, [text]);
+  feedHeuristic();
 
   return (
     <div

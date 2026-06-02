@@ -5,6 +5,18 @@ import {
 } from "@/components/assistant-ui/attachment";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import ChatStatusLine from "@/components/jarvis/ChatStatusLine";
+import { ArtifactPanel } from "@/components/chat/ArtifactPanel";
+import { CreateArtifactToolUI } from "@/components/chat/CreateArtifactToolUI";
+import { StartMvpBuildToolUI } from "@/components/chat/StartMvpBuildToolUI";
+import { RequestApprovalToolUI } from "@/components/jarvis/tool-uis/RequestApprovalToolUI";
+import { MissionSummaryDataUI } from "@/components/jarvis/data-uis/MissionSummaryDataUI";
+// Stream V: Aurora-glass Command Center cards
+import { ToolCallCard } from "@/components/jarvis-cards/ToolCallCard";
+import { FindingCard as FindingCardView } from "@/components/jarvis-cards/FindingCard";
+import { ActionCard as ActionCardView } from "@/components/jarvis-cards/ActionCard";
+import { BashCommandCard } from "@/components/jarvis-cards/BashCommandCard";
+import { FileEditCard } from "@/components/jarvis-cards/FileEditCard";
+import { StreamingProgressBar } from "@/components/jarvis-cards/StreamingProgressBar";
 
 import {
   ReasoningContent,
@@ -28,10 +40,12 @@ import {
   ComposerPrimitive,
   ErrorPrimitive,
   getMcpAppFromToolPart,
+  makeAssistantVisible,
   MessagePrimitive,
   SuggestionPrimitive,
   ThreadPrimitive,
   useAuiState,
+  useAssistantInstructions,
 } from "@assistant-ui/react";
 import {
   ArrowDownIcon,
@@ -54,48 +68,119 @@ import { useState, type DragEvent } from "react";
 import {
   JarvisReasoning,
   JarvisReasoningGroup,
-  JarvisToolCall,
   JarvisText,
 } from "@/components/jarvis/JarvisMessageRenderer";
 import { MessagePartsBoundary } from "@/components/assistant-ui/MessagePartsBoundary";
+import { useArtifactStore } from "@/stores/artifactStore";
+import { ALL_CANVAS_TOOLS } from "@/lib/canvas-tools";
+
+// F2: Make ArtifactPanel visible to the assistant so it can reference
+// the current artifact's slug, title, type, and file contents in its context.
+const VisibleArtifactPanel = makeAssistantVisible(ArtifactPanel, {
+  clickable: false,
+  editable: false,
+});
 
 export const Thread: FC = () => {
+  const artifactOpen = useArtifactStore((s) => s.isOpen);
+
+  // F1: Dynamic system instructions based on artifact store state.
+  // When a user has an artifact open, the assistant knows which artifact
+  // to reference and how to modify it.
+  // Phase 4 P1: Extended with canvas mastery rules + self-knowledge.
+  const currentArtifact = useArtifactStore((s) => s.current);
+  const isOpen = useArtifactStore((s) => s.isOpen);
+  const mode = useArtifactStore((s) => s.mode);
+  const tabs = useArtifactStore((s) => s.tabs);
+  const pinnedIds = useArtifactStore((s) => s.pinnedIds);
+
+  const canvasInstructions = `
+You have a canvas (right pane) where rich artifacts render. Use these tools:
+- create_artifact(type, title, ...) — push new artifact (code >20 lines, reports >300 words, tables, charts, mini-apps)
+- open_canvas() / close_canvas() — control panel visibility
+- pin_artifact(id) — pin important artifacts user might revisit
+- switch_tab(id) — jump between open artifacts
+- compare_revisions(id, v1, v2) — offer compare after iterations
+- fullscreen_canvas() — suggest for large artifacts (>100 lines code, >500 words report, mini-app)
+- download_artifact(id, format) — 'md' reports, 'png' charts, 'csv' data, 'zip' code
+
+Canvas decision rules:
+- USE CANVAS for: code blocks, structured reports, tables, charts, mini-apps, mission records, comparisons
+- DON'T use canvas for: short text answers, one-off explanations, conversational replies
+- Pin when: user asks OR predicted later reference (morning brief, deploy plan, settled customer)
+- New artifact = new tab (don't replace current unless iterating)
+- Replace current when: same artifact iterating (use updateCurrent for streaming)
+
+${isOpen ? `Canvas is OPEN (mode=${mode}). Tabs: ${tabs.length}. Pinned: ${pinnedIds.length}. Current: ${currentArtifact?.title || 'none'}.` : 'Canvas is CLOSED. Open with open_canvas() before pushing artifacts.'}
+When in doubt: push to canvas. User can always close (Cmd+\\).
+
+Self-knowledge: You can inspect your own runtime. Skills at /home/hermes/cortex/skills/*.md cover your architecture, canvas mastery, and runtime introspection.
+`.trim();
+
+  useAssistantInstructions(
+    currentArtifact
+      ? `User is viewing artifact "${currentArtifact.title}" (${currentArtifact.type}, id=${currentArtifact.id}). When they request changes, call update_artifact with the appropriate id. When they want something new, call start_mvp_build.\n\n${canvasInstructions}`
+      : `User has no open artifact. When they ask to build or create something, call start_mvp_build({prompt, type}).\n\n${canvasInstructions}`
+  );
+
   return (
     <ThreadPrimitive.Root
       className="aui-root aui-thread-root @container flex h-full flex-col bg-background"
       style={{
-        ["--thread-max-width" as string]: "44rem",
+        ["--thread-max-width" as string]: artifactOpen ? "40rem" : "44rem",
         ["--composer-radius" as string]: "24px",
         ["--composer-padding" as string]: "10px",
       }}
     >
-      <ThreadPrimitive.Viewport
-        turnAnchor="top"
-        data-slot="aui_thread-viewport"
-        className="relative flex flex-1 flex-col overflow-x-hidden overflow-y-auto scroll-smooth"
-      >
-        <div className="mx-auto flex w-full max-w-(--thread-max-width) min-h-0 flex-1 flex-col px-4 pt-4">
-          <AuiIf condition={(s) => s.thread.isEmpty}>
-            <ThreadWelcome />
-          </AuiIf>
-
-          <div
-            data-slot="aui_message-group"
-            className="mb-6 flex flex-col gap-y-8 empty:hidden"
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* Main thread area */}
+        <div className="flex flex-1 flex-col min-w-0">
+          <ThreadPrimitive.Viewport
+            turnAnchor="top"
+            data-slot="aui_thread-viewport"
+            className="relative flex flex-1 flex-col overflow-x-hidden overflow-y-auto scroll-smooth"
           >
-            <ThreadPrimitive.Messages>
-              {() => <ThreadMessage />}
-            </ThreadPrimitive.Messages>
-          </div>
+            <div className="mx-auto flex w-full max-w-(--thread-max-width) min-h-0 flex-1 flex-col px-4 pt-4">
+              <AuiIf condition={(s) => s.thread.isEmpty}>
+                <ThreadWelcome />
+              </AuiIf>
 
-          <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer sticky bottom-0 mt-auto flex flex-col gap-4 overflow-visible rounded-t-(--composer-radius) bg-background pb-4 md:pb-6">
-            <ThinkingPulse />
-            <ThreadScrollToBottom />
-            <ChatStatusLine />
-            <Composer />
-          </ThreadPrimitive.ViewportFooter>
+              {/* Stream V: Aurora glass progress bar — sticky top */}
+              <StreamingProgressBar />
+
+              <div
+                data-slot="aui_message-group"
+                className="mb-6 flex flex-col gap-y-8 empty:hidden"
+              >
+                <ThreadPrimitive.Messages>
+                  {() => <ThreadMessage />}
+                </ThreadPrimitive.Messages>
+              </div>
+
+              <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer sticky bottom-0 mt-auto flex flex-col gap-4 overflow-visible rounded-t-(--composer-radius) bg-background pb-4 md:pb-6">
+                <ThinkingPulse />
+                <ThreadScrollToBottom />
+                <ChatStatusLine />
+                <Composer />
+              </ThreadPrimitive.ViewportFooter>
+            </div>
+          </ThreadPrimitive.Viewport>
         </div>
-      </ThreadPrimitive.Viewport>
+
+        {/* Right-side artifact panel — auto-appears when artifact present (F2: visible to assistant) */}
+        <VisibleArtifactPanel />
+      </div>
+
+      {/* Tool UI registrations — must be mounted within AssistantRuntimeProvider context */}
+      {/* Stream V: Tool UIs registered via makeAssistantToolUI.
+          FindingCard/ActionCard/CommandCard/FileDiffCard are now routed
+          via tools.Override in the message parts grouped renderer above. */}
+      <CreateArtifactToolUI />
+      <StartMvpBuildToolUI />
+      <RequestApprovalToolUI />
+      {/* Phase 4 P1: Canvas control tools */}
+      {ALL_CANVAS_TOOLS.map((Tool, i) => <Tool key={i} />)}
+      <MissionSummaryDataUI />
     </ThreadPrimitive.Root>
   );
 };
@@ -413,8 +498,7 @@ const AssistantMessage: FC = () => {
     <MessagePrimitive.Root
       data-slot="aui_assistant-message-root"
       data-role="assistant"
-      className="relative [contain-intrinsic-size:auto_300px] [content-visibility:auto]"
-    >
+      className="relative"    >
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -491,8 +575,29 @@ const AssistantMessage: FC = () => {
               Text: (props: any) => <JarvisText {...props} />,
               Reasoning: (props: any) => <JarvisReasoning {...props} />,
               tools: {
-                Override: (props: any) =>
-                  props.toolUI ?? <JarvisToolCall {...(props as any)} />,
+                Override: (props: any) => {
+                  // CRITICAL CARDINAL: Registered tool UIs take priority
+                  if (props.toolUI) return props.toolUI;
+
+                  const toolName = String(props.toolName || "").toLowerCase();
+
+                  // Route by toolName to the appropriate Aurora-glass card
+                  if (/bash|command|shell|exec|terminal|^run_command|command_run/i.test(toolName)) {
+                    return <BashCommandCard {...(props as any)} />;
+                  }
+                  if (/edit|write|replace|create_file|str_replace|patch|file_edited/i.test(toolName)) {
+                    return <FileEditCard {...(props as any)} />;
+                  }
+                  if (/finding_emitted|emit_finding/i.test(toolName)) {
+                    return <FindingCardView {...(props as any)} />;
+                  }
+                  if (/action_emitted|emit_action/i.test(toolName)) {
+                    return <ActionCardView {...(props as any)} />;
+                  }
+
+                  // Default: ToolCallCard
+                  return <ToolCallCard {...(props as any)} />;
+                },
               },
             }}
           />
@@ -546,7 +651,7 @@ const UserMessage: FC = () => {
   return (
     <MessagePrimitive.Root
       data-slot="aui_user-message-root"
-      className="fade-in slide-in-from-bottom-1 grid animate-in auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] content-start gap-y-2 px-2 duration-150 [contain-intrinsic-size:auto_60px] [content-visibility:auto] [&:where(>*)]:col-start-2"
+      className="fade-in slide-in-from-bottom-1 grid animate-in auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] content-start gap-y-2 px-2 duration-150 [&:where(>*)]:col-start-2"
       data-role="user"
     >
       <UserMessageAttachments />
