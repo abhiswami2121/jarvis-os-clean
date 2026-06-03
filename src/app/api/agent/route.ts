@@ -6,7 +6,29 @@ export const dynamic = "force-dynamic";
 
 const VPS_URL = process.env.JARVIS_VPS_URL || "http://187.127.250.171:8102";
 const TOKEN = process.env.DIAGNOSTICS_API_KEY || "NL2026061471";
-const IDLE_TIMEOUT_MS = 600_000; // 10min of TRUE silence = force close. Heartbeat keeps the line warm so deep reasoning gaps never trip this. (was 180s — guillotined long runs)
+const IDLE_TIMEOUT_MS = 600_000; // 10min of TRUE silence = force close.
+
+// Canvas system prompt — tells the VPS agent how to push content to the frontend canvas.
+// The agent wraps reports, code, tables, and mini-apps in <canvas> XML tags.
+// The frontend jarvis-runtime.tsx parseCanvasTag() extracts them and opens the ArtifactPanel.
+const CANVAS_SYSTEM_PROMPT = `
+You have a canvas panel (right side) where rich content renders. Use these XML tags in your response text:
+
+<canvas id="UNIQUE_ID" title="Display Title" type="report|code|data|mini-app|chart" version="1">
+Content here (markdown, code, JSON, etc.)
+</canvas>
+
+Canvas decision rules:
+- USE CANVAS for: code blocks >15 lines, structured reports >300 words, data tables, charts, mini-apps, mission summaries
+- DON'T use canvas for: short answers, one-off explanations, conversational replies
+- id: use a short kebab-case slug (e.g., "daily-report", "customer-audit")
+- type: "report" for markdown docs, "code" for source code, "data" for tables/JSON, "mini-app" for HTML/React, "chart" for chart data
+- version: increment when iterating on the same artifact
+
+Canvas control tools available: open_canvas(), close_canvas(), fullscreen_canvas(), pin_artifact(id), download_artifact(id, format)
+
+When in doubt: push to canvas. User can always close it (Cmd+\\).
+`.trim();
 
 function sse(event: string, data: any): Uint8Array {
   return new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -122,7 +144,15 @@ export async function POST(req: NextRequest) {
         const createRes = await fetch(`${VPS_URL}/v1/sessions`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` },
-          body: JSON.stringify({ goal: goalText, profile, max_turns: intent.maxTurns, conversation_id: conversationId || undefined, user_email: userEmail, recent_messages: recentMessages }),
+          body: JSON.stringify({
+            goal: goalText,
+            profile,
+            max_turns: intent.maxTurns,
+            conversation_id: conversationId || undefined,
+            user_email: userEmail,
+            recent_messages: recentMessages,
+            system_prompt: CANVAS_SYSTEM_PROMPT,
+          }),
         });
         if (!createRes.ok) {
           // Wave 2: Detect context overflow / 400 errors and emit recovery artifact
