@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     // Generate task ID
     const taskId = `tsk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
-    // ── Step 1: Create task row ──────────────────────────────────
+    // ── Step 1: Create task row (only required fields) ─────────────
     await db.insert(tasks).values({
       id: taskId,
       userId,
@@ -32,10 +32,9 @@ export async function POST(req: NextRequest) {
       selectedModel,
       routingMode,
       status: "routing",
-      title: prompt.trim().slice(0, 80),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+      progress: 0,
+      maxDuration: 300,
+    } as any);
 
     // ── Step 2: Resolve routing ──────────────────────────────────
     let route;
