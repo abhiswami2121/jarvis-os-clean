@@ -1,8 +1,8 @@
 "use client";
-import React from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useParams, usePathname } from "next/navigation";
-import { MessageSquarePlus, MessageSquare, Sparkles, X, Trash2, Loader2, FileText, Settings } from "lucide-react";
+import { MessageSquarePlus, MessageSquare, Sparkles, X, Trash2, Loader2, FileText, Settings, Paintbrush } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useConversationList } from "@/hooks/useConversationList";
 import { formatRelativeTime, newConversationId, type Conversation } from "@/lib/jarvis-os-client";
@@ -14,12 +14,25 @@ export function ChatSidebar({ open, onOpenChange }: { open: boolean; onOpenChang
   const params = useParams<{ id?: string }>();
   const activeId = (params?.id as string | undefined) || null;
   const { conversations, loading, error, refresh } = useConversationList("aswa0617@gmail.com");
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // ── Escape key to close ────────────────────────────────────────
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onOpenChange]);
+
+  // ── Click outside to close ─────────────────────────────────────
+  const handleOverlayClick = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   const handleNew = () => {
     const id = newConversationId();
     if (typeof window !== "undefined") sessionStorage.setItem(LS_CID, id);
     router.push(`/chat/${id}`);
-    // Refresh after a tick so the new conversation shows up
     setTimeout(refresh, 1500);
   };
 
@@ -31,7 +44,18 @@ export function ChatSidebar({ open, onOpenChange }: { open: boolean; onOpenChang
   return (
     <AnimatePresence mode="wait">
       {open && (
+        <>
+        {/* Transparent overlay captures clicks outside the sidebar */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-10 bg-black/20 xl:hidden"
+          onClick={handleOverlayClick}
+        />
         <motion.aside
+          ref={sidebarRef}
           initial={{ x: -300, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -300, opacity: 0 }}
@@ -104,6 +128,7 @@ export function ChatSidebar({ open, onOpenChange }: { open: boolean; onOpenChang
             <span className="text-zinc-600">{conversations.length} saved</span>
           </div>
         </motion.aside>
+        </>
       )}
     </AnimatePresence>
   );
@@ -138,6 +163,7 @@ function ConversationRow({ conversation, active, onSelect }: { conversation: Con
 
 function SidebarNav() {
   const pathname = usePathname();
+  const isDesign = pathname?.startsWith("/design");
   const isDocuments = pathname?.startsWith("/documents");
 
   return (
@@ -147,13 +173,19 @@ function SidebarNav() {
           href="/chat"
           icon={MessageSquare}
           label="Chat"
-          active={!isDocuments}
+          active={!isDesign && !isDocuments}
         />
         <NavItem
           href="/documents"
           icon={FileText}
           label="Documents"
           active={isDocuments}
+        />
+        <NavItem
+          href="/design"
+          icon={Paintbrush}
+          label="Design"
+          active={isDesign}
         />
       </nav>
     </div>
