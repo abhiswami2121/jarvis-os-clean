@@ -4,7 +4,13 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Paintbrush, AlertTriangle, Loader2, ExternalLink, RefreshCw, Smartphone, Monitor } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
-const DAEMON_URL = process.env.NEXT_PUBLIC_OD_DAEMON_URL || "http://127.0.0.1:7456";
+// Load Open Design through a same-origin Next.js rewrite so the iframe works
+// from any client (Vercel, VPS tunnel, localhost) with zero CORS issues.
+// The rewrite /design-proxy/** → daemon is defined in next.config.ts.
+const DAEMON_URL =
+  typeof window !== "undefined"
+    ? `${window.location.origin}/design-proxy`
+    : "http://127.0.0.1:7456";
 
 type DaemonStatus = "checking" | "online" | "offline";
 

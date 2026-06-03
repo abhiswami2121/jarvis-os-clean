@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ModelSelector } from "@/components/jarvis/ModelSelector";
 import { ConnectorPlusMenu } from "@/components/chat/ConnectorPlusMenu";
 
-export function ChatTopBar({ onSidebarToggle, onArtifactToggle, artifactOpen }: { onSidebarToggle: () => void; onArtifactToggle: () => void; artifactOpen: boolean }) {
+export function ChatTopBar({ onSidebarToggle, onArtifactToggle, artifactOpen, onConnectorSheetToggle }: { onSidebarToggle: () => void; onArtifactToggle: () => void; artifactOpen: boolean; onConnectorSheetToggle?: () => void }) {
   const [online, setOnline] = useState(true);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export function ChatTopBar({ onSidebarToggle, onArtifactToggle, artifactOpen }: 
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <ConnectorPlusMenu />
+        <ConnectorPlusMenu onOpenSheet={onConnectorSheetToggle} />
         <div className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium backdrop-blur-md transition-colors ${online ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400" : "bg-amber-500/10 border-amber-500/25 text-amber-400"}`}>
           <div className={`size-1.5 rounded-full ${online ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
           {online ? "online" : "offline"}

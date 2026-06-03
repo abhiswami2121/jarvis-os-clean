@@ -433,3 +433,105 @@
   .chat-aurora-fixed.is-active,
   .chat-aurora-fixed.is-idle { opacity: 0.22; }
 }
+
+/* ============================================================
+   AURA DESIGN SYSTEM — Liquid Glass Token Layer
+   Layered ON TOP of existing Aurora Glass. Adds Claude Design
+   spec (aura-design-system) tokens. Non-breaking.
+   ============================================================ */
+
+:root {
+  /* ── Aura Spectral Colors ── */
+  --aura-blue:    #5B8CFF;
+  --aura-violet:  #9A6BFF;
+  --aura-magenta: #E85BD0;
+  --aura-coral:   #FF8A6B;
+  --aura-emerald: #3DD68C;
+
+  /* ── Aura Gradients ── */
+  --aura-grad: linear-gradient(100deg, var(--aura-blue) 0%, var(--aura-violet) 38%, var(--aura-magenta) 70%, var(--aura-coral) 100%);
+  --aura-grad-soft: linear-gradient(135deg, #6E8BFF 0%, #B36BFF 55%, #E85BD0 100%);
+
+  /* ── Aura Canvas (deep dark) ── */
+  --aura-bg-0: #0A0912;
+  --aura-bg-1: #100E1A;
+  --aura-bg-2: #181626;
+
+  /* ── Aura Liquid Glass ── */
+  --aura-glass-fill:   rgba(255,255,255,0.055);
+  --aura-glass-fill-2: rgba(255,255,255,0.085);
+  --aura-glass-stroke: rgba(255,255,255,0.12);
+  --aura-glass-hi:     rgba(255,255,255,0.28);
+  --aura-glass-blur:   28px;
+  --aura-glass-blur-lg: 44px;
+
+  /* ── Aura Shadows ── */
+  --aura-shadow-glass: 0 10px 40px -12px rgba(0,0,0,0.6), inset 0 1px 0 0 var(--aura-glass-hi);
+  --aura-glow-accent: 0 0 0 1px rgba(110,139,255,0.35), 0 8px 32px -6px rgba(110,139,255,0.45);
+  --aura-glow-aura: 0 8px 40px -8px rgba(154,107,255,0.5);
+
+  /* ── Aura Motion ── */
+  --aura-ease-fluid: cubic-bezier(0.22, 1, 0.36, 1);
+  --aura-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --aura-dur-fast: 0.16s;
+  --aura-dur-base: 0.28s;
+}
+
+/* ── Aura Glass Utility ── */
+.aura-glass {
+  background: var(--aura-glass-fill);
+  backdrop-filter: blur(var(--aura-glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--aura-glass-blur)) saturate(160%);
+  border: 1px solid var(--aura-glass-stroke);
+  box-shadow: var(--aura-shadow-glass);
+}
+.aura-glass-strong {
+  background: var(--aura-glass-fill-2);
+  backdrop-filter: blur(var(--aura-glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--aura-glass-blur)) saturate(160%);
+  border: 1px solid var(--aura-glass-stroke);
+  box-shadow: var(--aura-shadow-glass);
+}
+
+/* ── Aura Text Gradient ── */
+.aura-text-gradient {
+  background: var(--aura-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── Aura Connector Menu ── */
+.aura-connector-menu {
+  animation: auraMenuIn var(--aura-dur-base) var(--aura-ease-fluid);
+}
+@keyframes auraMenuIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Aura Connector Item ── */
+.aura-connector-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 12px;
+  border-radius: 12px; border: none; cursor: pointer;
+  background: transparent; color: var(--aura-glass-fg, #F4F2FB);
+  font-family: inherit; font-size: 13px; text-align: left;
+  transition: background var(--aura-dur-fast) var(--aura-ease-fluid);
+}
+.aura-connector-item:hover {
+  background: var(--aura-glass-fill-2);
+}
+.aura-connector-item:active {
+  background: var(--aura-glass-fill);
+  transform: scale(0.98);
+}
+
+/* ── Aura Badge ── */
+.aura-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  background: rgba(61,214,140,0.12); color: var(--aura-emerald);
+  border: 1px solid rgba(61,214,140,0.2);
+}

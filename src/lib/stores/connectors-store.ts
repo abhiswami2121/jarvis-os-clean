@@ -205,7 +205,7 @@ export const useConnectorsStore = create<ConnectorsState>()(
             (e) =>
               e.name.toLowerCase().includes(q) ||
               e.description.toLowerCase().includes(q) ||
-              e.tags?.some((t: string) => t.toLowerCase().includes(q))
+              e.configTemplate.tags?.some((t: string) => t.toLowerCase().includes(q))
           );
         }
         return filtered;

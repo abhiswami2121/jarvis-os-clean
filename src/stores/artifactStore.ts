@@ -119,7 +119,7 @@ function saveHistory(history: ArtifactRevision[]) {
 function loadTabs(): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = sessionStorage.getItem(LS_TABS_KEY);
+    const raw = localStorage.getItem(LS_TABS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -131,7 +131,7 @@ function loadTabs(): string[] {
 function saveTabs(tabs: string[]) {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(LS_TABS_KEY, JSON.stringify(tabs));
+    localStorage.setItem(LS_TABS_KEY, JSON.stringify(tabs));
   } catch { /* degrade */ }
 }
 
@@ -254,7 +254,7 @@ export const useArtifactStore = create<ArtifactStoreState>((set, get) => ({
   clear: () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem(LS_KEY);
-      sessionStorage.removeItem(LS_TABS_KEY);
+      localStorage.removeItem(LS_TABS_KEY);
       localStorage.removeItem(LS_PINS_KEY);
       localStorage.removeItem(LS_MODE_KEY);
     }

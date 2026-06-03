@@ -92,17 +92,7 @@ export const StatusCardArtifactSchema = z.object({
 
 export type StatusCardArtifact = z.infer<typeof StatusCardArtifactSchema>;
 
-// ── Union Type ─────────────────────────────────────────────────
-export const ArtifactSchema = z.discriminatedUnion("type", [
-  DataTableArtifactSchema,
-  ChartArtifactSchema,
-  ActionPanelArtifactSchema,
-  StatusCardArtifactSchema,
-]);
-
-
-
-// PRD May 27 — Slack Canvas artifact (out-of-flow expandable module)
+// ── Slack Canvas Artifact ──────────────────────────────────────
 export const SlackCanvasArtifactSchema = z.object({
   type: z.literal("slack_canvas"),
   title: z.string(),
@@ -113,19 +103,33 @@ export const SlackCanvasArtifactSchema = z.object({
 });
 export type SlackCanvasArtifact = z.infer<typeof SlackCanvasArtifactSchema>;
 
-// ── Deployed App Artifact (MVP/Demo App pipeline) ─────────────────
+// ── Error Recovery Artifact ────────────────────────────────────
+export const ErrorRecoveryArtifactSchema = z.object({
+  type: z.literal("error_recovery"),
+  title: z.string(),
+  errorType: z.enum(["context_overflow", "circuit_breaker", "tool_failure", "timeout", "network", "generic"]),
+  message: z.string(),
+  detail: z.string().optional(),
+  failingTool: z.string().optional(),
+  failureCount: z.number().optional(),
+  actions: z.array(z.object({
+    id: z.string(),
+    label: z.string(),
+    intent: z.enum(["clear_history", "new_branch", "retry", "abort", "escalate", "contact_support"]),
+    variant: z.enum(["primary", "secondary", "danger"]).optional(),
+  })).default([]),
+});
+export type ErrorRecoveryArtifact = z.infer<typeof ErrorRecoveryArtifactSchema>;
+
+// ── Deployed App Artifact ──────────────────────────────────────
 export const DeployedAppArtifactSchema = z.object({
   type: z.literal("deployed_app"),
   title: z.string(),
   app_type: z.enum(["web_app", "landing_page", "data_dashboard", "mini_app", "component", "spa"]).default("web_app"),
   status: z.enum(["generating", "sandbox", "building", "deploying", "live", "error"]).default("generating"),
-
-  // URLs
   live_url: z.string().optional(),
   sandbox_url: z.string().optional(),
   github_url: z.string().optional(),
-
-  // Content
   description: z.string().default(""),
   html_content: z.string().optional(),
   source_files: z.array(z.object({
@@ -133,17 +137,12 @@ export const DeployedAppArtifactSchema = z.object({
     content: z.string(),
     language: z.string(),
   })).optional(),
-
-  // Framework
   framework: z.enum(["html", "react", "nextjs", "vite"]).optional().default("html"),
-
-  // Actions
   actions: z.array(z.object({
     label: z.string(),
     intent: z.enum(["edit_code", "redeploy", "view_live", "view_sandbox", "download", "share"]),
     variant: z.enum(["primary", "secondary", "danger"]).optional(),
   })).optional(),
-
   metadata: z.object({
     slug: z.string().optional(),
     repo_path: z.string().optional(),
@@ -154,7 +153,18 @@ export const DeployedAppArtifactSchema = z.object({
 });
 export type DeployedAppArtifact = z.infer<typeof DeployedAppArtifactSchema>;
 
-export type Artifact = z.infer<typeof ArtifactSchema> | SlackCanvasArtifact | ErrorRecoveryArtifact | DeployedAppArtifact;
+// ── Union Type (all schemas defined above) ─────────────────────
+export const ArtifactSchema = z.discriminatedUnion("type", [
+  DataTableArtifactSchema,
+  ChartArtifactSchema,
+  ActionPanelArtifactSchema,
+  StatusCardArtifactSchema,
+  SlackCanvasArtifactSchema,
+  ErrorRecoveryArtifactSchema,
+  DeployedAppArtifactSchema,
+]);
+
+export type Artifact = z.infer<typeof ArtifactSchema>;
 
 // ── Parser Result ──────────────────────────────────────────────
 export interface ParseResult {
@@ -180,21 +190,3 @@ export function validateArtifact(raw: unknown): { artifact: Artifact | null; err
     return { artifact: null, error: message };
   }
 }
-
-// ── Error Recovery Artifact (Wave 2: Context Overflow + Circuit Breaker) ──
-export const ErrorRecoveryArtifactSchema = z.object({
-  type: z.literal("error_recovery"),
-  title: z.string(),
-  errorType: z.enum(["context_overflow", "circuit_breaker", "tool_failure", "timeout", "network", "generic"]),
-  message: z.string(),
-  detail: z.string().optional(),
-  failingTool: z.string().optional(),
-  failureCount: z.number().optional(),
-  actions: z.array(z.object({
-    id: z.string(),
-    label: z.string(),
-    intent: z.enum(["clear_history", "new_branch", "retry", "abort", "escalate", "contact_support"]),
-    variant: z.enum(["primary", "secondary", "danger"]).optional(),
-  })).default([]),
-});
-export type ErrorRecoveryArtifact = z.infer<typeof ErrorRecoveryArtifactSchema>;

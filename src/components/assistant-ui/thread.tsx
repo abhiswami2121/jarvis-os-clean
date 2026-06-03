@@ -82,7 +82,7 @@ const VisibleArtifactPanel = makeAssistantVisible(ArtifactPanel, {
   editable: false,
 });
 
-export const Thread: FC = () => {
+export const Thread: FC<{ hasHistory?: boolean }> = ({ hasHistory = false }) => {
   const artifactOpen = useArtifactStore((s) => s.isOpen);
 
   // F1: Dynamic system instructions based on artifact store state.
@@ -142,7 +142,10 @@ Self-knowledge: You can inspect your own runtime. Skills at /home/hermes/cortex/
             className="relative flex flex-1 flex-col overflow-x-hidden overflow-y-auto scroll-smooth"
           >
             <div className="mx-auto flex w-full max-w-(--thread-max-width) min-h-0 flex-1 flex-col px-4 pt-4">
-              <AuiIf condition={(s) => s.thread.isEmpty}>
+              {/* ThreadWelcome ONLY on truly new conversations.
+                  hasHistory is set by page.tsx after seeding initialMessages.
+                  This prevents "How can I help you today?" on active chats. */}
+              <AuiIf condition={(s) => s.thread.isEmpty && !hasHistory}>
                 <ThreadWelcome />
               </AuiIf>
 

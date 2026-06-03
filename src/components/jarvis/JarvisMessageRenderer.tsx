@@ -484,15 +484,15 @@ export const JarvisText: TextMessagePartComponent = ({ text }) => {
       className={cn(
         // Stable container — no re-layout during streaming
         "relative my-3 rounded-xl overflow-hidden",
-        // Aurora glass morphism
-        "bg-gradient-to-br from-white/[0.03] via-white/[0.01] to-emerald-500/[0.02]",
+        // Aura liquid glass morphism (blue-violet spectrum)
+        "bg-gradient-to-br from-[#6E8BFF]/[0.04] via-[#9A6BFF]/[0.02] to-[#E85BD0]/[0.03]",
         "backdrop-blur-sm",
-        "border border-white/[0.06]",
-        "shadow-[0_0_30px_-10px_rgba(16,185,129,0.05)]",
-        // Emerald aurora left accent
+        "border border-white/[0.05]",
+        "shadow-[0_0_30px_-10px_rgba(110,139,255,0.06)]",
+        // Aura spectrum left accent (blue→violet→fade)
         "before:absolute before:left-0 before:top-3 before:bottom-3 before:w-[2px]",
-        "before:rounded-full before:bg-gradient-to-b before:from-emerald-400/60 before:via-emerald-500/30 before:to-transparent",
-        // Contain: layout only (NOT style+paint+contentVisibility — those prevent repaints during streaming)
+        "before:rounded-full before:bg-gradient-to-b before:from-[#6E8BFF]/70 before:via-[#9A6BFF]/40 before:to-transparent",
+        // Contain: layout only
         "contain-layout",
       )}
     >

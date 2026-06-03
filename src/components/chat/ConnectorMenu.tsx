@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Plus,
@@ -26,6 +26,7 @@ import {
   Zap,
   RefreshCw,
 } from "lucide-react";
+import { useConnectorsStore } from "@/lib/stores/connectors-store";
 
 // ── Connector with actions ──────────────────────────────────────
 
@@ -33,7 +34,7 @@ interface ConnectorAction {
   id: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  intent: string; // machine-readable action name
+  intent: string;
 }
 
 interface ConnectorItem {
@@ -47,7 +48,33 @@ interface ConnectorItem {
   actions?: ConnectorAction[];
 }
 
-const CONNECTORS: ConnectorItem[] = [
+/**
+ * Icon name → Lucide icon component mapping.
+ * Used to render icons for store connector types.
+ */
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  mcp: Braces,
+  slack: MessageSquare,
+  nmi: CreditCard,
+  ghl: Workflow,
+  resend: Globe,
+  hyperswitch: CreditCard,
+  twenty: BarChart3,
+  linear: Terminal,
+  n8n: Workflow,
+  dify: Brain,
+  langfuse: Search,
+  notebooklm: BookOpen,
+  api: Globe,
+  default: Braces,
+};
+
+function iconForId(id: string): React.ComponentType<{ className?: string }> {
+  const key = id.toLowerCase();
+  return ICON_MAP[key] || ICON_MAP.default;
+}
+
+const HARDCODED_CONNECTORS: ConnectorItem[] = [
   // ── Upload ──
   {
     id: "upload",
@@ -239,6 +266,43 @@ export function ConnectorMenu({ onUploadClick, onConnectorClick, onConnectorActi
   const [open, setOpen] = useState(false);
   const [expandedConnector, setExpandedConnector] = useState<string | null>(null);
 
+  // ── Merge store connectors with hardcoded catalog ─────────────
+  const storeConnectors = useConnectorsStore((s) => s.connectors);
+
+  const connectorItems = useMemo((): ConnectorItem[] => {
+    // Build set of store connector IDs for dedup
+    const storeIds = new Set(storeConnectors.map((c) => c.id));
+
+    // Map store connectors → menu items (these are "configured" or "live")
+    const storeItems: ConnectorItem[] = storeConnectors.map((c) => {
+      // Map store status → UI status
+      const uiStatus: ConnectorItem["status"] =
+        c.status === "connected" ? "live" :
+        c.status === "configuring" || c.status === "testing" ? "configured" :
+        "available";
+      return {
+        id: c.id,
+        label: c.name,
+        description: c.description || `${c.type.toUpperCase()} connection`,
+        icon: iconForId(c.id),
+        category: "connector" as const,
+        status: uiStatus,
+        badge: c.status === "connected" ? "online" : (c.status === "error" ? "error" : undefined),
+        actions: [
+          { id: `${c.id}-test`, label: "Test Connection", icon: Activity, intent: `test_${c.id}` },
+          { id: `${c.id}-configure`, label: "Configure", icon: Settings, intent: `configure_${c.id}` },
+        ],
+      };
+    });
+
+    // Filter hardcoded catalog: only show entries NOT already in store
+    const catalogItems: ConnectorItem[] = HARDCODED_CONNECTORS.filter(
+      (c) => c.category === "connector" && !storeIds.has(c.id)
+    );
+
+    return [...storeItems, ...catalogItems];
+  }, [storeConnectors]);
+
   const handleItemClick = (item: ConnectorItem) => {
     if (item.id === "upload") {
       onUploadClick?.();
@@ -262,8 +326,7 @@ export function ConnectorMenu({ onUploadClick, onConnectorClick, onConnectorActi
   };
 
   // Separate upload from connectors
-  const uploadItem = CONNECTORS.find((c) => c.id === "upload");
-  const connectorItems = CONNECTORS.filter((c) => c.id !== "upload");
+  const uploadItem = HARDCODED_CONNECTORS.find((c) => c.id === "upload");
 
   return (
     <div className="relative">

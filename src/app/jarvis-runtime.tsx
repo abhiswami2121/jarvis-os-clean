@@ -255,8 +255,6 @@ const JarvisAdapter: ChatModelAdapter = {
     // Single source of truth for applying one stream event. Both the live loop
     // and the resume-poll call this, so handling is identical on both paths.
     const applyEvent = async (name: string, data: any) => {
-      let _applyEventErrorCount = 0;
-      try {
       try {
       const type = data.type || name;
       if (typeof data.seq === "number" && data.seq > lastSeq) lastSeq = data.seq;
@@ -409,16 +407,6 @@ const JarvisAdapter: ChatModelAdapter = {
           receivedDone = true;
         }
         // Continue — don't let one bad event kill the whole chat session
-      }
-      } catch (_applyEventErr: any) {
-        _applyEventErrorCount++;
-        console.warn('[jarvis-runtime] applyEvent error #' + _applyEventErrorCount + ':', _applyEventErr?.message || _applyEventErr);
-        if (_applyEventErrorCount > 10) {
-          console.error('[jarvis-runtime] applyEvent error threshold exceeded, emitting terminal error');
-          accumulatedText += '\n\n⚠️ Chat session encountered errors and was terminated. Please refresh to start a new session.';
-          receivedDone = true;
-          emitStatus(null);
-        }
       }
     }; // end applyEvent
 
