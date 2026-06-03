@@ -1,0 +1,148 @@
+"use client";
+
+import { create } from "zustand";
+
+// ── Types ──────────────────────────────────────────────────────────
+
+export type ArtifactType = "report" | "code" | "data" | "mini-app" | "chart";
+
+export interface CodeFile {
+  path: string;
+  content: string;
+  language?: string;
+}
+
+export interface DataColumn {
+  key: string;
+  label: string;
+  sortable?: boolean;
+}
+
+export interface ArtifactRevision {
+  id: string;
+  type: ArtifactType;
+  title: string;
+  content?: string;
+  files?: CodeFile[];
+  columns?: DataColumn[];
+  rows?: Record<string, unknown>[];
+  totalRows?: number;
+  src?: string;
+  createdAt: number;
+}
+
+export interface ArtifactStoreState {
+  /** Currently displayed artifact */
+  current: ArtifactRevision | null;
+  /** Revision history (latest first) */
+  history: ArtifactRevision[];
+  /** Panel visibility */
+  isOpen: boolean;
+
+  /** Push a new artifact revision onto history and display it */
+  push: (artifact: Omit<ArtifactRevision, "id" | "createdAt"> & { id?: string; createdAt?: number }) => void;
+  /** Close the side panel (keeps history) */
+  close: () => void;
+  /** Re-open the panel */
+  openPanel: () => void;
+  /** Clear all history and close */
+  clear: () => void;
+  /** Select a specific revision from history */
+  selectRevision: (id: string) => void;
+  /** Update current artifact in-place (for streaming content) */
+  updateCurrent: (patch: Partial<ArtifactRevision>) => void;
+}
+
+// ── Persistence helpers ────────────────────────────────────────────
+
+const LS_KEY = "newleaf:artifacts";
+
+function loadHistory(): ArtifactRevision[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(history: ArtifactRevision[]) {
+  if (typeof window === "undefined") return;
+  try {
+    // Keep last 50 revisions to avoid filling localStorage
+    const trimmed = history.slice(0, 50);
+    localStorage.setItem(LS_KEY, JSON.stringify(trimmed));
+  } catch {
+    // localStorage full or unavailable — silently degrade
+  }
+}
+
+// ── Store ──────────────────────────────────────────────────────────
+
+export const useArtifactStore = create<ArtifactStoreState>((set, get) => ({
+  current: null,
+  history: loadHistory(),
+  isOpen: false,
+
+  push: (artifact) => {
+    const revision: ArtifactRevision = {
+      id: artifact.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: artifact.createdAt || Date.now(),
+      type: artifact.type,
+      title: artifact.title,
+      ...(artifact.content != null && { content: artifact.content }),
+      ...(artifact.files && { files: artifact.files }),
+      ...(artifact.columns && { columns: artifact.columns }),
+      ...(artifact.rows && { rows: artifact.rows }),
+      ...(artifact.totalRows != null && { totalRows: artifact.totalRows }),
+      ...(artifact.src && { src: artifact.src }),
+    };
+
+    const newHistory = [revision, ...get().history];
+    saveHistory(newHistory);
+
+    set({
+      current: revision,
+      history: newHistory,
+      isOpen: true,
+    });
+  },
+
+  close: () => set({ isOpen: false }),
+
+  openPanel: () => {
+    const { current } = get();
+    if (current) set({ isOpen: true });
+  },
+
+  clear: () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(LS_KEY);
+    }
+    set({ current: null, history: [], isOpen: false });
+  },
+
+  selectRevision: (id) => {
+    const { history } = get();
+    const found = history.find((a) => a.id === id);
+    if (found) {
+      set({ current: found, isOpen: true });
+    }
+  },
+
+  updateCurrent: (patch) => {
+    const { current, history } = get();
+    if (!current) return;
+
+    const updated: ArtifactRevision = { ...current, ...patch };
+    const updatedHistory = history.map((a) => (a.id === current.id ? updated : a));
+    saveHistory(updatedHistory);
+
+    set({ current: updated, history: updatedHistory });
+  },
+}));
+
+export default useArtifactStore;

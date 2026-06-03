@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { resolveRoute } from "@/lib/neptune/routing-resolver";
 import { createNeptuneTask } from "@/lib/neptune/client";
 
@@ -24,17 +24,11 @@ export async function POST(req: NextRequest) {
     // Generate task ID
     const taskId = `tsk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
-    // ── Step 1: Create task row (only required fields) ─────────────
-    await db.insert(tasks).values({
-      id: taskId,
-      userId,
-      prompt: prompt.trim(),
-      selectedModel,
-      routingMode,
-      status: "routing",
-      progress: 0,
-      maxDuration: 300,
-    } as any);
+    // ── Step 1: Create task row via raw SQL ────────────────────────
+    await db.execute(sql`
+      INSERT INTO tasks (id, user_id, prompt, selected_model, routing_mode, status, max_duration, progress)
+      VALUES (${taskId}, ${userId}, ${prompt.trim()}, ${selectedModel}, ${routingMode}, 'routing', 300, 0)
+    `);
 
     // ── Step 2: Resolve routing ──────────────────────────────────
     let route;

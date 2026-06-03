@@ -1,0 +1,133 @@
+import { NextRequest } from "next/server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const MVP_VPS_URL = process.env.MVP_BUILDER_URL || "http://187.127.250.171:8200";
+
+/**
+ * POST /api/mvp/new
+ * Body: { prompt: string }
+ *
+ * Creates a new MVP:
+ * 1. Generates a slug from the prompt
+ * 2. Calls VPS /plan to start planning with Kimi
+ * 3. Returns { slug, sessionId?, title } for the client to open sandbox page
+ */
+function slugify(prompt: string): string {
+  return prompt
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 48)
+    .replace(/^-+|-+$/g, "")
+    || `mvp-${Date.now().toString(36)}`;
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const prompt = (body.prompt || "").trim();
+    if (!prompt || prompt.length < 3) {
+      return new Response(JSON.stringify({ error: "Prompt too short (min 3 chars)" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const slug = slugify(prompt);
+
+    // Call VPS /plan to start the pipeline
+    let planResult: any = null;
+    try {
+      const planRes = await fetch(`${MVP_VPS_URL}/plan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, slug }),
+        signal: AbortSignal.timeout(30_000),
+      });
+
+      if (!planRes.ok) {
+        const errText = await planRes.text().catch(() => "Unknown VPS error");
+        return new Response(JSON.stringify({ error: `VPS plan failed: ${planRes.status}`, detail: errText.slice(0, 200) }), {
+          status: 502,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      const ct = planRes.headers.get("content-type") || "";
+      if (ct.includes("text/event-stream")) {
+        // SSE response — read first event with plan data
+        const reader = planRes.body?.getReader();
+        if (reader) {
+          const decoder = new TextDecoder();
+          let buffer = "";
+          const start = Date.now();
+          while (Date.now() - start < 10_000) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            // Look for MVP_PLAN_READY event
+            const match = buffer.match(/event:\s*MVP_PLAN_READY\s*\ndata:\s*(\{[\s\S]*?\})\n\n/);
+            if (match) {
+              try {
+                planResult = JSON.parse(match[1]);
+                break;
+              } catch {}
+            }
+            // Also check for plain JSON
+            const jsonMatch = buffer.match(/data:\s*(\{[\s\S]*?"slug"[\s\S]*?\})\n\n/);
+            if (jsonMatch) {
+              try {
+                planResult = JSON.parse(jsonMatch[1]);
+                break;
+              } catch {}
+            }
+          }
+          reader.cancel().catch(() => {});
+        }
+      } else {
+        planResult = await planRes.json();
+      }
+    } catch (err: any) {
+      // Plan call failed — still return slug so user can retry
+      return new Response(JSON.stringify({
+        slug,
+        title: prompt.slice(0, 60),
+        sessionId: null,
+        status: "planning_failed",
+        error: err?.message || "Failed to reach VPS",
+      }), {
+        status: 200, // 200 so client can show fallback UI
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({
+      slug,
+      title: planResult?.title || prompt.slice(0, 60),
+      sessionId: planResult?.session_id || null,
+      status: "planned",
+      plan: planResult || null,
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({ error: err?.message || "Internal error" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}

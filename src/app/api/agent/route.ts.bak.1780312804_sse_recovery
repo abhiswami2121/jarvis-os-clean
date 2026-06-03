@@ -1,0 +1,207 @@
+import { NextRequest } from "next/server";
+
+export const runtime = "nodejs";
+export const maxDuration = 300; // Vercel Hobby max; Pro=900. Agent-level streaming keeps connection alive.
+export const dynamic = "force-dynamic";
+
+const VPS_URL = process.env.JARVIS_VPS_URL || "http://187.127.250.171:8102";
+const TOKEN = process.env.DIAGNOSTICS_API_KEY || "NL2026061471";
+const IDLE_TIMEOUT_MS = 600_000; // 10min of TRUE silence = force close. Heartbeat keeps the line warm so deep reasoning gaps never trip this. (was 180s — guillotined long runs)
+
+function sse(event: string, data: any): Uint8Array {
+  return new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+// ── SSE DEDUP NOTE ───────────────────────────────────────────────────────
+// Dedup fix 2026-06-01: The raw byte passthrough makes SSE-level dedup
+// impractical here. Deduplication is handled at the frontend layer:
+//   - jarvis-runtime.tsx: applyEvent() rejects duplicate toolCallIds
+//   - ConversationHydrator.tsx: AssistantParts dedupes before rendering
+// This keeps the proxy simple and avoids fragile SSE parsing.
+
+function classifyIntent(text: string): { tier: "trivial" | "normal" | "deep"; maxTurns: number } {
+  // CRITICAL FIX 2026-05-27 v2: tool budget 250 ACROSS ALL TIERS (Abhi mandate).
+  // Backend server.py defaults to 250. hooks.py budget ceiling is 250. Don't choke them here.
+  // Tier classification kept for UX (telemetry/badging) but max_turns is uniformly 250.
+  const t = (text || "").toLowerCase().trim();
+  if (/^(hi|hello|hey|yo|sup|thanks|thank you|ok|okay|cool|nice|gg|ping)\b/.test(t) && t.length < 12) {
+    return { tier: "trivial", maxTurns: 250 };
+  }
+  if (/(audit|analyze|comprehensive|full report|investigate|deep dive|reconcile|sweep|every (client|customer|account)|all (clients|customers|accounts)|cross[- ]?reference|deep[- ]?analysis|full[- ]?picture)/.test(t)) {
+    return { tier: "deep", maxTurns: 250 };
+  }
+  return { tier: "normal", maxTurns: 250 };
+}
+
+async function cancelVpsSession(sid: string): Promise<void> {
+  if (!sid) return;
+  try {
+    await fetch(`${VPS_URL}/v1/sessions/${sid}/cancel`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${TOKEN}` },
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch (_) { /* best effort */ }
+}
+
+export async function DELETE(req: NextRequest) {
+  const url = new URL(req.url);
+  const sid = url.searchParams.get("sid") || "";
+  if (!sid) return new Response(JSON.stringify({ error: "sid required" }), { status: 400 });
+  await cancelVpsSession(sid);
+  return new Response(JSON.stringify({ ok: true, cancelled: sid }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function POST(req: NextRequest) {
+  const body: any = await req.json().catch(() => ({}));
+  const messages: any[] = body.messages || [];
+  const profile: string = body.profile || "deepseek-v4-pro";
+  const conversationId: string = body.conversation_id || body.conversationId || "";  // optional persistence handle
+  const userEmail: string = body.user_email || "aswa0617@gmail.com";
+
+  const lastUser = [...messages].reverse().find((m: any) => m.role === "user");
+  let goalText = "";
+  if (lastUser && lastUser.content) {
+    if (typeof lastUser.content === "string") goalText = lastUser.content;
+    else if (Array.isArray(lastUser.content)) {
+      goalText = lastUser.content.filter((p: any) => p.type === "text").map((p: any) => p.text).join("\n");
+    }
+  }
+  if (!goalText) goalText = "Hello";
+
+  const intent = classifyIntent(goalText);
+
+  // VERSAILLES FIX: do NOT stuff prior conversation into the goal string.
+  // The VPS persists conversation state via conversation_id (SQLite chat_store).
+  // The agent loads its own context from the persisted message log per session.
+  // This prevents the "Prior conversation: USER:... A:..." echo pattern in every turn.
+
+  // CONTEXT REPAIR: forward last 10 messages to VPS so the agent has
+  // immediate context even if its SQLite-based conversation loading is slow/flaky.
+  // The conversation_id still serves as the primary persistence key.
+  const recentMessages = messages.slice(-10);
+
+  let activeSid = "";
+  let lastEventAt = Date.now();
+  let idleWatchdog: ReturnType<typeof setInterval> | null = null;
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      // Watchdog: if 90s of silence, cancel the VPS session and close stream
+      idleWatchdog = setInterval(async () => {
+        if (Date.now() - lastEventAt > IDLE_TIMEOUT_MS) {
+          try { controller.enqueue(sse("error", { error: `Idle timeout after ${IDLE_TIMEOUT_MS/1000}s — session cancelled` })); } catch (_) {}
+          if (activeSid) await cancelVpsSession(activeSid);
+          if (idleWatchdog) { clearInterval(idleWatchdog); idleWatchdog = null; } try { clearInterval(heartbeat); } catch (_) {}
+          try { controller.close(); } catch (_) {}
+        }
+      }, 5000);
+
+      // HEARTBEAT: emit a keepalive every 15s so the HTTP stream never looks
+      // idle to Vercel's proxy or the browser. The client ignores keepalive
+      // events (no content change). This is what lets deep runs survive long
+      // think-gaps without the connection being severed.
+      const heartbeat = setInterval(() => {
+        try { controller.enqueue(sse("keepalive", { t: Date.now() })); } catch (_) {}
+      }, 15000);
+
+      // If client disconnects (closes tab, hits Stop), cancel VPS session
+      req.signal.addEventListener("abort", async () => {
+        if (activeSid) await cancelVpsSession(activeSid);
+        if (idleWatchdog) { clearInterval(idleWatchdog); idleWatchdog = null; } try { clearInterval(heartbeat); } catch (_) {}
+        try { controller.close(); } catch (_) {}
+      });
+
+      try {
+        controller.enqueue(sse("system", { type: "system", subtype: "connecting" }));
+        controller.enqueue(sse("system", { type: "system", subtype: "intent", tier: intent.tier, max_turns: intent.maxTurns }));
+
+        const createRes = await fetch(`${VPS_URL}/v1/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` },
+          body: JSON.stringify({ goal: goalText, profile, max_turns: intent.maxTurns, conversation_id: conversationId || undefined, user_email: userEmail, recent_messages: recentMessages }),
+        });
+        if (!createRes.ok) {
+          // Wave 2: Detect context overflow / 400 errors and emit recovery artifact
+          let errBody = "";
+          try { errBody = await createRes.text(); } catch (_) {}
+          const isContextOverflow = createRes.status === 400 && /context|token|length|exceed/i.test(errBody);
+          if (isContextOverflow) {
+            const recoveryArtifact = {
+              type: "error_recovery",
+              title: "Conversation Too Long",
+              errorType: "context_overflow",
+              message: "This conversation has hit the model's context limit. Pick a recovery path below to keep going without losing your typing buffer.",
+              detail: errBody.slice(0, 300),
+              actions: [
+                { id: "clear", label: "Clear History", intent: "clear_history", variant: "primary" },
+                { id: "branch", label: "Start New Branch", intent: "new_branch", variant: "secondary" },
+                { id: "abort", label: "Cancel", intent: "abort", variant: "secondary" },
+              ],
+            };
+            controller.enqueue(sse("text", { type: "text", text: `[[ARTIFACT_START:error_recovery]]\n${JSON.stringify(recoveryArtifact)}\n[[ARTIFACT_END]]` }));
+            controller.enqueue(sse("done", { type: "done", status: "context_overflow" }));
+          } else {
+            controller.enqueue(sse("error", { error: `Session create failed: ${createRes.status} — ${errBody.slice(0,200)}` }));
+          }
+          controller.close();
+          return;
+        }
+
+        const sessionData: any = await createRes.json();
+        const sid = sessionData.session_id;
+        if (!sid) {
+          controller.enqueue(sse("error", { error: "No session_id returned" }));
+          controller.close();
+          return;
+        }
+        activeSid = sid;
+        lastEventAt = Date.now();
+
+        // Tell client the session id so it can use the Stop button
+        controller.enqueue(sse("session", { type: "session", session_id: sid }));
+        // Tell client which conversation this belongs to (for URL routing + persistence)
+        controller.enqueue(sse("conversation", { type: "conversation", conversation_id: sessionData.conversation_id || conversationId || sid }));
+
+        const streamRes = await fetch(`${VPS_URL}/v1/sessions/${sid}/stream`, {
+          headers: { "Authorization": `Bearer ${TOKEN}` },
+          signal: req.signal,
+        });
+        if (!streamRes.ok || !streamRes.body) {
+          controller.enqueue(sse("error", { error: `Stream failed: ${streamRes.status}` }));
+          controller.close();
+          return;
+        }
+
+        const reader = streamRes.body.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          lastEventAt = Date.now();
+          controller.enqueue(value);
+        }
+
+        controller.enqueue(sse("done", { type: "done", status: "complete" }));
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        try { controller.enqueue(sse("error", { error: msg })); } catch (_) {}
+      } finally {
+        if (idleWatchdog) { clearInterval(idleWatchdog); idleWatchdog = null; } try { clearInterval(heartbeat); } catch (_) {}
+        try { controller.close(); } catch (_) {}
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+      "Connection": "keep-alive",
+    },
+  });
+}
