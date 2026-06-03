@@ -7,8 +7,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Use pg Pool directly (bypasses drizzle for inserts to avoid column-defaults issues)
+const DB_URL = (process.env.DATABASE_URL || "").replace("sslmode=require", "sslmode=no-verify");
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL!,
+  connectionString: DB_URL,
   ssl: { rejectUnauthorized: false },
 });
 

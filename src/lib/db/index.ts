@@ -2,9 +2,10 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
 
-// Supabase pooler connection (standard PostgreSQL wire protocol, not Vercel/Neon websocket)
+// Supabase pooler connection — sslmode=no-verify required for self-signed certs
+const DB_URL = (process.env.DATABASE_URL || "").replace("sslmode=require", "sslmode=no-verify");
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL!,
+  connectionString: DB_URL,
   ssl: { rejectUnauthorized: false },
 });
 
