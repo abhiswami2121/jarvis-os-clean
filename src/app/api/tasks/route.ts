@@ -29,6 +29,12 @@ export async function POST(req: NextRequest) {
 
     const taskId = `tsk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
+    // ── Step 0: Ensure user row exists ────────────────────────────
+    await client.query(
+      `INSERT INTO users (id, email) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING`,
+      [userId, req.headers.get("x-user-email") || ""]
+    );
+
     // ── Step 1: Create task row ──────────────────────────────────
     await client.query(
       `INSERT INTO tasks (id, user_id, prompt, selected_model, routing_mode, status, max_duration, progress, created_at, updated_at)
