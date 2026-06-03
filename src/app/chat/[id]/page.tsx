@@ -1,22 +1,22 @@
 "use client";
-import { useState, use, useEffect } from "react";
+import { useState, use, useEffect, useRef } from "react";
 import { Thread } from "@/components/assistant-ui/thread";
 import { JarvisRuntimeProvider } from "@/app/jarvis-runtime";
 import { ChatSidebar } from "@/components/jarvis/ChatSidebar";
 import { ChatTopBar } from "@/components/jarvis/ChatTopBar";
 import { ConnectionPill } from "@/components/jarvis/ConnectionPill";
-import { ConversationHydrator } from "@/components/jarvis/ConversationHydrator";
 import { ChatAurora } from "@/components/jarvis/ChatAurora";
-import { CanvasOverlay } from "@/components/canvas/CanvasOverlay";
-import { ArtifactWorkspace } from "@/components/workspace/ArtifactWorkspace";
-import { SlackCanvasToolUI } from "@/components/chat/SlackCanvasToolUI";
-import { LiveStatusPane } from "@/components/jarvis/LiveStatusPane";
+import { PlatformHealthPanel } from "@/components/jarvis/PlatformHealthPanel";
+import { ConversationHydrator } from "@/components/jarvis/ConversationHydrator";
 import { useConnectionState } from "@/hooks/useConnectionState";
 import { useArtifactStore } from "@/stores/artifactStore";
 import { useCanvasShortcuts } from "@/lib/use-canvas-shortcuts";
 import { ArtifactProvider } from "@/contexts/ArtifactContext";
 import { JarvisErrorBoundary } from "@/components/error/JarvisErrorBoundary";
 import { ConnectorChatSheet } from "@/components/chat/ConnectorChatSheet";
+import { getLocalCachedMessages } from "@/lib/jarvis-os-client";
+import { toThreadMessages } from "@/app/hydrate-initial-messages";
+import type { ThreadMessageLike } from "@assistant-ui/react";
 import { toast } from "sonner";
 
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -58,6 +58,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               onArtifactToggle={() => artifactOpen ? artifactClose() : artifactOpenPanel()}
               artifactOpen={artifactOpen}
               onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+              onConnectorSheetToggle={() => setConnectorSheetOpen(!connectorSheetOpen)}
             />
           </div>
           <div className="absolute top-3 right-4 z-30 hidden md:block">
@@ -65,8 +66,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           </div>
 
           <div className="flex-1 min-h-0 relative overflow-y-auto">
-            <ConversationHydrator cid={conversationId} />
             <ChatAurora>
+              {/* BUG FIX 2026-06-02: ConversationHydrator was removed from the page,
+                  causing history to disappear on refresh. It fetches from VPS SQLite
+                  via useConversationReplay, with localStorage cache fallback for
+                  instant hydration. Renders history using the same dark-glass
+                  aesthetic as the live Thread. */}
+              <ConversationHydrator cid={conversationId} />
               <JarvisErrorBoundary>
                 <Thread />
               </JarvisErrorBoundary>
@@ -76,14 +82,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
         {/* Note: ArtifactPanel is now embedded inside Thread for flex-row layout */}
 
-        {/* Stream V: LiveStatusPane — right-side glass panel with session metrics */}
+        {/* Right sidebar: Platform Health Panel (Twenty, Hyper, Linear, n8n, Dify, Slack) */}
         <aside className="hidden xl:flex w-80 flex-none border-l border-white/5 bg-[#08080f]/40 backdrop-blur-md overflow-y-auto">
-          <LiveStatusPane />
+          <PlatformHealthPanel />
         </aside>
       </div>
-      <SlackCanvasToolUI />
-      <CanvasOverlay />
-      <ArtifactWorkspace />
+      {/* Canvas: ArtifactPanel renders inline inside Thread via makeAssistantVisible */}
       <ConnectorChatSheet isOpen={connectorSheetOpen} onClose={() => setConnectorSheetOpen(false)} />
       </ArtifactProvider>
     </JarvisRuntimeProvider>

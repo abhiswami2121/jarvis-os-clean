@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useLocalRuntime, type ChatModelAdapter, AssistantRuntimeProvider } from "@assistant-ui/react";
+import { useLocalRuntime, type ChatModelAdapter, type ThreadMessageLike, AssistantRuntimeProvider } from "@assistant-ui/react";
 import { toast } from "sonner";
 import { useSessionStore } from "@/lib/session-store";
 import { newleafAttachmentAdapter } from "@/lib/attachment-adapters";
@@ -530,7 +530,7 @@ const JarvisAdapter: ChatModelAdapter = {
   },
 };
 
-export function JarvisRuntimeProvider({ children, conversationId }: { children: React.ReactNode; conversationId?: string }) {
+export function JarvisRuntimeProvider({ children, conversationId, initialMessages }: { children: React.ReactNode; conversationId?: string; initialMessages?: ThreadMessageLike[] }) {
   // Seed sessionStorage with URL-provided conversationId so the adapter picks it up on first POST
   React.useEffect(() => {
     if (conversationId && typeof window !== "undefined") {
@@ -539,6 +539,7 @@ export function JarvisRuntimeProvider({ children, conversationId }: { children: 
   }, [conversationId]);
   const runtime = useLocalRuntime(JarvisAdapter, {
     adapters: { attachments: newleafAttachmentAdapter },
+    initialMessages: initialMessages || [],
   });
   return <AssistantRuntimeProvider runtime={runtime}>{children}</AssistantRuntimeProvider>;
 }
