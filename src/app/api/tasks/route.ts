@@ -30,9 +30,12 @@ export async function POST(req: NextRequest) {
     const taskId = `tsk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
     // ── Step 0: Ensure user row exists ────────────────────────────
+    const email = req.headers.get("x-user-email") || `${userId}@neptune.local`;
     await client.query(
-      `INSERT INTO users (id, email, provider) VALUES ($1, $2, 'clerk') ON CONFLICT (id) DO NOTHING`,
-      [userId, req.headers.get("x-user-email") || ""]
+      `INSERT INTO users (id, email, provider, external_id, access_token, username)
+       VALUES ($1, $2, 'clerk', $3, $3, $4)
+       ON CONFLICT (id) DO NOTHING`,
+      [userId, email, `ext_${userId}`, userId.slice(0, 20)]
     );
 
     // ── Step 1: Create task row ──────────────────────────────────
