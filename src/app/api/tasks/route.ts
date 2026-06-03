@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { tasks } from "@/lib/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { Pool } from "pg";
 import { resolveRoute } from "@/lib/neptune/routing-resolver";
 import { createNeptuneTask } from "@/lib/neptune/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Use pg Pool directly (bypasses drizzle for inserts to avoid column-defaults issues)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL!,
+  ssl: { rejectUnauthorized: false },
+});
+
 // ── POST /api/tasks — Create & dispatch a task ────────────────────
 export async function POST(req: NextRequest) {
+  const client = await pool.connect();
   try {
     const body = await req.json();
     const prompt: string = body.prompt;
@@ -21,38 +26,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Prompt must be at least 3 characters" }, { status: 400 });
     }
 
-    // Generate task ID
     const taskId = `tsk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
-    // ── Step 1: Create task row via raw SQL ────────────────────────
-    await db.execute(sql`
-      INSERT INTO tasks (id, user_id, prompt, selected_model, routing_mode, status, max_duration, progress)
-      VALUES (${taskId}, ${userId}, ${prompt.trim()}, ${selectedModel}, ${routingMode}, 'routing', 300, 0)
-    `);
+    // ── Step 1: Create task row ──────────────────────────────────
+    await client.query(
+      `INSERT INTO tasks (id, user_id, prompt, selected_model, routing_mode, status, max_duration, progress, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,'routing',300,0,NOW(),NOW())`,
+      [taskId, userId, prompt.trim(), selectedModel, routingMode]
+    );
 
     // ── Step 2: Resolve routing ──────────────────────────────────
     let route;
     try {
       route = await resolveRoute(selectedModel, routingMode);
     } catch (routingError: any) {
-      // Write error back and return
-      await db.update(tasks).set({
-        status: "error",
-        error: `Routing failed: ${routingError.message}`,
-        updatedAt: new Date(),
-      }).where(eq(tasks.id, taskId));
+      await client.query(
+        `UPDATE tasks SET status='error', error=$1, updated_at=NOW() WHERE id=$2`,
+        [`Routing failed: ${routingError.message}`, taskId]
+      );
       return NextResponse.json({ error: routingError.message }, { status: 422 });
     }
 
     // ── Step 3: Write resolved routing fields ────────────────────
-    await db.update(tasks).set({
-      resolvedModel: route.model,
-      resolvedProvider: route.provider,
-      resolvedBaseUrl: route.base_url,
-      resolvedKeyPrefix: route.key_prefix,
-      status: "dispatched",
-      updatedAt: new Date(),
-    }).where(eq(tasks.id, taskId));
+    await client.query(
+      `UPDATE tasks SET resolved_model=$1, resolved_provider=$2, resolved_base_url=$3, resolved_key_prefix=$4, status='dispatched', updated_at=NOW() WHERE id=$5`,
+      [route.model, route.provider, route.base_url, route.key_prefix, taskId]
+    );
 
     // ── Step 4: Dispatch to Neptune VPS backend ──────────────────
     let neptuneResult;
@@ -70,21 +69,18 @@ export async function POST(req: NextRequest) {
         conversation_id: body.conversation_id,
       });
     } catch (dispatchError: any) {
-      await db.update(tasks).set({
-        status: "error",
-        error: `Dispatch failed: ${dispatchError.message}`,
-        updatedAt: new Date(),
-      }).where(eq(tasks.id, taskId));
+      await client.query(
+        `UPDATE tasks SET status='error', error=$1, updated_at=NOW() WHERE id=$2`,
+        [`Dispatch failed: ${dispatchError.message}`, taskId]
+      );
       return NextResponse.json({ error: dispatchError.message }, { status: 502 });
     }
 
     // ── Step 5: Update with VPS session ID ───────────────────────
-    await db.update(tasks).set({
-      agentSessionId: neptuneResult.session_id,
-      status: "running",
-      sandboxId: neptuneResult.session_id,
-      updatedAt: new Date(),
-    }).where(eq(tasks.id, taskId));
+    await client.query(
+      `UPDATE tasks SET agent_session_id=$1, sandbox_id=$1, status='running', updated_at=NOW() WHERE id=$2`,
+      [neptuneResult.session_id, taskId]
+    );
 
     return NextResponse.json({
       ok: true,
@@ -101,24 +97,28 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Task creation failed" }, { status: 500 });
+  } finally {
+    client.release();
   }
 }
 
 // ── GET /api/tasks — List tasks ──────────────────────────────────
 export async function GET(req: NextRequest) {
+  const client = await pool.connect();
   try {
-    const userId = req.headers.get("x-user-id") || "default";
     const url = new URL(req.url);
-    const limit = parseInt(url.searchParams.get("limit") || "20");
+    const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 100);
+    const userId = req.headers.get("x-user-id") || "default";
 
-    const rows = await db.query.tasks.findMany({
-      where: eq(tasks.userId, userId),
-      orderBy: [desc(tasks.createdAt)],
-      limit,
-    });
+    const result = await client.query(
+      `SELECT * FROM tasks WHERE user_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT $2`,
+      [userId, limit]
+    );
 
-    return NextResponse.json({ tasks: rows, count: rows.length });
+    return NextResponse.json({ tasks: result.rows, count: result.rows.length });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to list tasks" }, { status: 500 });
+  } finally {
+    client.release();
   }
 }
