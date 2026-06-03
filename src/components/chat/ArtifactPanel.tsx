@@ -146,9 +146,9 @@ function ArtifactInner() {
         </div>
       </div>
 
-      {/* Phase 4 P1: Multi-tab bar */}
-      {tabs.length > 1 && (
-        <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-white/[0.04] overflow-x-auto scrollbar-none">
+      {/* Phase 4 P1: Claude-style multi-tab bar */}
+      {tabs.length > 0 && (
+        <div className="flex items-center gap-0 px-2 py-1.5 border-b border-white/[0.03] overflow-x-auto scrollbar-none bg-white/[0.01]">
           {/* Sort pinned first, then by recency */}
           {[...tabs].sort((a, b) => {
             const aPinned = pinnedIds.includes(a) ? 0 : 1;
@@ -162,30 +162,33 @@ function ArtifactInner() {
             const tabColor = TYPE_COLORS[art.type] || "text-zinc-500";
             const isActive = tabId === activeTabId;
             const isPinned = pinnedIds.includes(tabId);
-            const title = (art.title || "Untitled").slice(0, 18);
+            const title = (art.title || "Untitled").slice(0, 22);
 
             return (
               <button
                 key={tabId}
                 onClick={() => switchTab(tabId)}
-                title={art.title}
-                className={`group flex items-center gap-1.5 shrink-0 rounded-md px-2.5 py-1 text-[11px] font-medium transition-all border ${
+                onDoubleClick={() => isPinned ? unpinTab(tabId) : pinTab(tabId)}
+                title={`${art.title}${isPinned ? " (pinned — double-click to unpin)" : " (double-click to pin)"}`}
+                className={`group/tab flex items-center gap-1.5 shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150 border mx-0.5 ${
                   isActive
-                    ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
-                    : "text-zinc-500 hover:text-zinc-300 border-transparent hover:bg-white/[0.04]"
+                    ? "bg-white/[0.06] text-zinc-200 border-white/[0.08] shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
+                    : "text-zinc-500 hover:text-zinc-300 border-transparent hover:bg-white/[0.03]"
                 }`}
               >
-                <TabIcon className={`size-3 shrink-0 ${isActive ? "text-emerald-400" : tabColor}`} />
-                <span className="truncate max-w-[90px]">{title}</span>
-                {isPinned && <Pin className="size-2.5 shrink-0 text-amber-400/60" />}
+                <TabIcon className={`size-3 shrink-0 ${isActive ? "text-zinc-300" : tabColor}`} />
+                <span className="truncate max-w-[100px]">{title}</span>
+                {isPinned && (
+                  <Pin className="size-2.5 shrink-0 text-zinc-500 ml-0.5" />
+                )}
                 <span
                   onClick={(e) => {
                     e.stopPropagation();
                     closeTab(tabId);
                   }}
-                  className="ml-0.5 flex size-3.5 items-center justify-center rounded-sm text-zinc-600 hover:text-zinc-200 hover:bg-white/[0.1] opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="ml-0.5 flex size-4 items-center justify-center rounded-sm text-zinc-600 hover:text-zinc-200 hover:bg-white/[0.15] opacity-0 group-hover/tab:opacity-100 transition-opacity"
                 >
-                  <X className="size-2.5" />
+                  <X className="size-3" />
                 </span>
               </button>
             );
@@ -293,30 +296,38 @@ function DesktopArtifactPanel() {
           initial={{ x: "100%", opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: "100%", opacity: 0 }}
-          transition={{ type: "spring", stiffness: 380, damping: 30 }}
-          className={`hidden lg:flex relative z-20 shrink-0 flex-col border-l border-white/[0.06] bg-zinc-950/95 backdrop-blur-xl ${
-            isFullscreen ? "w-full fixed inset-0 z-50" : "w-[45vw]"
+          transition={{ type: "spring", stiffness: 340, damping: 32 }}
+          className={`hidden lg:flex relative z-20 shrink-0 flex-col border-l border-white/[0.04] ${
+            isFullscreen ? "w-full fixed inset-0 z-50" : "w-[42vw] min-w-[480px] max-w-[720px]"
           }`}
+          style={{
+            background: "linear-gradient(180deg, rgba(12,11,22,0.98) 0%, rgba(9,8,16,0.99) 100%)",
+            backdropFilter: "blur(48px) saturate(180%)",
+            WebkitBackdropFilter: "blur(48px) saturate(180%)",
+            boxShadow: "-8px 0 40px -16px rgba(0,0,0,0.5), inset 1px 0 0 0 rgba(255,255,255,0.03)",
+          }}
           data-artifact-panel="desktop"
           role="complementary"
           aria-label="Artifact panel"
         >
           <ArtifactInner />
-          {/* Bottom-right controls */}
-          <div className="absolute bottom-4 right-4 flex items-center gap-2">
-            {/* Fullscreen toggle */}
+          {/* Bottom-right controls — Claude-style: subtle, contextual */}
+          <div className="absolute bottom-4 right-4 flex items-center gap-1.5">
+            {/* Split/Fullscreen toggle */}
             <button
               onClick={() => setMode(isFullscreen ? "split" : "fullscreen")}
-              className="flex size-8 items-center justify-center rounded-full border border-white/[0.08] bg-zinc-900 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+              className="flex size-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors"
               aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              title={isFullscreen ? "Exit fullscreen" : "Fullscreen (⌘F)"}
             >
-              {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+              {isFullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
             </button>
             {/* Close */}
             <button
               onClick={close}
-              className="flex size-8 items-center justify-center rounded-full border border-white/[0.08] bg-zinc-900 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+              className="flex size-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors"
               aria-label="Close panel"
+              title="Close canvas (⌘\\)"
             >
               <X className="size-4" />
             </button>

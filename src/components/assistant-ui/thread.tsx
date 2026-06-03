@@ -6,6 +6,7 @@ import {
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import ChatStatusLine from "@/components/jarvis/ChatStatusLine";
 import { ArtifactPanel } from "@/components/chat/ArtifactPanel";
+import { ConnectorMenu } from "@/components/chat/ConnectorMenu";
 import { CreateArtifactToolUI } from "@/components/chat/CreateArtifactToolUI";
 import { StartMvpBuildToolUI } from "@/components/chat/StartMvpBuildToolUI";
 import { RequestApprovalToolUI } from "@/components/jarvis/tool-uis/RequestApprovalToolUI";
@@ -443,9 +444,38 @@ const Composer: FC = () => {
 
 const ComposerAction: FC = () => {
   const isRunning = useAuiState((s) => s.thread.isRunning);
+  // Ref to programmatically trigger the hidden file input
+  const fileInputRef = useState<HTMLInputElement | null>(null);
+
+  const handleUploadClick = () => {
+    // Find and click the hidden ComposerAddAttachment file input
+    const hiddenInput = document.querySelector('input[type="file"][data-slot="aui_composer-attachment"]') as HTMLInputElement;
+    if (hiddenInput) hiddenInput.click();
+  };
+
   return (
     <div className="aui-composer-action-wrapper relative flex items-center justify-between">
-      <ComposerAddAttachment />
+      {/* Claude-style action bar: Attachment icon + Connector menu */}
+      <div className="flex items-center gap-0.5">
+        {/* Visible Attachment button — Claude-style paperclip */}
+        <button
+          type="button"
+          onClick={handleUploadClick}
+          className="flex size-9 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.06] transition-all duration-200"
+          aria-label="Attach file"
+          title="Upload file (PDF, images, CSVs, code)"
+        >
+          <PaperclipIcon className="size-5" />
+        </button>
+
+        {/* + Connector menu */}
+        <ConnectorMenu onUploadClick={handleUploadClick} />
+
+        {/* Hidden: keep original attachment for file upload functionality */}
+        <div className="hidden">
+          <ComposerAddAttachment />
+        </div>
+      </div>
       <div className="relative size-8">
         <AnimatePresence mode="wait">
           {!isRunning ? (
@@ -511,12 +541,12 @@ const AssistantMessage: FC = () => {
           {/* Aurora glass container — fiber styling for entire assistant response */}
           <div className={cn(
             "relative rounded-2xl overflow-hidden my-1",
-            // Aurora glass morphism base
-            "bg-gradient-to-br from-slate-900/40 via-slate-900/20 to-emerald-900/10",
+            // Aura liquid glass morphism
+            "bg-gradient-to-br from-[#100E1A]/90 via-[#100E1A]/70 to-[#6E8BFF]/[0.04]",
             "backdrop-blur-xl",
-            "border border-white/[0.05]",
-            // Subtle emerald glow
-            "shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_4px_24px_-12px_rgba(16,185,129,0.08)]",
+            "border border-white/[0.04]",
+            // Aura spectral glow
+            "shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_4px_24px_-12px_rgba(110,139,255,0.06)]",
           )}>
             <div className="px-1 py-0.5"></div>
           <MessagePartsBoundary>
