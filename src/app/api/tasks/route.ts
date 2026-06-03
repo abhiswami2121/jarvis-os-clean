@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     // ── Step 0: Ensure user row exists ────────────────────────────
     await client.query(
-      `INSERT INTO users (id, email) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING`,
+      `INSERT INTO users (id, email, provider) VALUES ($1, $2, 'clerk') ON CONFLICT (id) DO NOTHING`,
       [userId, req.headers.get("x-user-email") || ""]
     );
 
